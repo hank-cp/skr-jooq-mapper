@@ -1,0 +1,52 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+    id("com.gradleup.nmcp.aggregation").version("1.0.1")
+    id 'org.springframework.boot' version "${spring_boot_version}"
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+repositories {
+    mavenCentral()
+}
+
+group = 'org.laxture.skr-jooq-mapper'
+version = '0.0.1'
+
+dependencies {
+    implementation "org.jooq:jooq:${jooq_version}"
+    implementation "com.fasterxml.jackson.core:jackson-core:${jackson_version}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jackson_version}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jackson_version}"
+
+    // Testing dependencies
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'com.h2database:h2'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+jar {
+    manifest.attributes provider: 'gradle'
+    enabled = true
+    doFirst {
+        archiveFileName = "$project.name-${archiveVersion.get()}.${archiveExtension.get()}"
+    }
+}
+
+test {
+    useJUnitPlatform()
+    testLogging.showStandardStreams = true
+    workingDir = project.rootDir
+    testLogging {
+        events "failed"
+        exceptionFormat = "short"
+    }
+}
+
+
