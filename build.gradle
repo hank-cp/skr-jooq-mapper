@@ -3,8 +3,6 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id("com.gradleup.nmcp.aggregation").version("1.0.1")
-    id 'org.springframework.boot' version "${spring_boot_version}"
-    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 repositories {
@@ -15,14 +13,20 @@ group = 'org.laxture.skr-jooq-mapper'
 version = '0.0.1'
 
 dependencies {
-    implementation "org.jooq:jooq:${jooq_version}"
+    implementation "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    api "org.jooq:jooq:${jooq_version}"
+    api 'org.apache.commons:commons-lang3:3.19.0'
     implementation "com.fasterxml.jackson.core:jackson-core:${jackson_version}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jackson_version}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jackson_version}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jackson_version}"
+    implementation "org.springframework.data:spring-data-commons:3.5.1"
 
-    // Testing dependencies
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'com.h2database:h2'
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'com.h2database:h2:2.3.232'
 }
 
 java {
@@ -48,5 +52,3 @@ test {
         exceptionFormat = "short"
     }
 }
-
-
