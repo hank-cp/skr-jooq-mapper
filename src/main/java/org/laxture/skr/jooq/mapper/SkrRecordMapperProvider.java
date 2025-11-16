@@ -39,10 +39,10 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
     }
 
     private class SkrRecordMapper<R extends Record, E> implements RecordMapper<R, E> {
-        private final Class<? extends E> targetType;
+        private final Class<? extends E> modelType;
 
         public SkrRecordMapper(Class<? extends E> targetType) {
-            this.targetType = targetType;
+            this.modelType = targetType;
         }
 
         @Override
@@ -52,24 +52,21 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
 
             if (record.size() == 1) {
                 Object value = record.get(0);
-                Object converted = convertFieldValue(value, targetType);
-                if (targetType.isInstance(converted)) {
+                Object converted = convertFieldValue(value, modelType);
+                if (modelType.isInstance(converted)) {
                     return (E) converted;
                 }
             }
 
-            E modelInstance = createInstance(targetType);
+            E modelInstance = createInstance(modelType);
             Set<String> processedFields = new HashSet<>();
 
             for (Field<?> field : record.fields()) {
                 Object jVal = field.get(record);
-
-                String fieldName = field.getName();
-                if (processedFields.contains(fieldName)) continue;
-                processedFields.add(fieldName);
+                String fieldName = convertToCamelCase(field.getName());
 
                 // find model field, convert and set value
-                TypeHelper.FieldTuple matchedField = findMatchModelField(targetType, fieldName);
+                TypeHelper.FieldTuple matchedField = findMatchModelField(modelInstance, fieldName);
                 if (matchedField == null) {
                     Object converted = convertFieldValue(jVal, matchedField.getField().getType());
                     if (converted == null) continue;
@@ -79,30 +76,32 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
                     } catch (IllegalAccessException e) {
                         throw new IllegalStateException("Field " + matchedField.getField() + " is not accessible");
                     }
+
+                    processedFields.add(field.getName());
                 }
             }
-            handleLeftoverCollector(modelInstance, record, processedFields, targetType);
+            handleLeftoverCollector(modelInstance, record, processedFields, modelType);
 
             if (modelInstance instanceof MappingHook hook) {
                 hook.postMapping();
             }
             return modelInstance;
         }
+    }
 
-        @SuppressWarnings("unchecked")
-        private <ModelType, JooqType> ModelType convertFieldValue(JooqType jVal, Class<?> modelType) {
-            if (jVal == null) return null;
+    @SuppressWarnings("unchecked")
+    private <ModelType, JooqType> ModelType convertFieldValue(JooqType jVal, Class<?> modelType) {
+        if (jVal == null) return null;
 
-            SkrJooqConverter<ModelType, JooqType> converter =
-                (SkrJooqConverter<ModelType, JooqType>) converterRegistry.matchConverter(modelType, jVal.getClass());
+        SkrJooqConverter<ModelType, JooqType> converter =
+            (SkrJooqConverter<ModelType, JooqType>) converterRegistry.matchConverter(modelType, jVal.getClass());
 
-            if (converter == null) {
-                log.warn("No converter found for model type {} and jooq type {}", modelType, jVal.getClass());
-                return null;
-            }
-
-            return converter.convertToModelType(jVal);
+        if (converter == null) {
+            log.warn("No converter found for model type {} and jooq type {}", modelType, jVal.getClass());
+            return null;
         }
+
+        return converter.convertToModelType(jVal);
     }
 
     private <T> T createInstance(Class<T> clazz) {
@@ -143,10 +142,72 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
         throw new IllegalStateException("No constructor found for " + clazz);
     }
 
-    private TypeHelper.FieldTuple findMatchModelField(Class<?> ModelClass, String fieldName) {
-        // 1. turn fieldName to camel case according to tableFieldCaseType
-        // 2. find model field. If not existed, check if it is nested object field.
-        // 3. if yes, construct nested object and continue to match field recursively.
+    private TypeHelper.FieldTuple findMatchModelField(Object modelInstance, String fieldName) {
+        java.lang.reflect.Field field = TypeHelper.findField(modelInstance.getClass(), fieldName);
+        if (field != null) {
+            return new TypeHelper.FieldTuple(field, modelInstance);
+        }
+
+        String[] nameParts = StringUtils.splitByCharacterTypeCamelCase(fieldName);
+        int partIndex = 0;
+        StringBuilder possibleNestedField = new StringBuilder(nameParts[partIndex]);
+        while (!possibleNestedField.toString().equals(fieldName)) {
+            field = TypeHelper.findField(modelInstance.getClass(), fieldName);
+            if (field != null && !TypeHelper.isPrimitive(field.getType())) {
+                Object nestedObject;
+                try {
+                    nestedObject = field.get(modelInstance);
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException("Field " + field + " is not accessible");
+                }
+                if (nestedObject == null) {
+                    nestedObject = createInstance(field.getType());
+                    field.setAccessible(true);
+                    try {
+                        field.set(modelInstance, nestedObject);
+                    } catch (IllegalAccessException e) {
+                        throw new IllegalStateException("Field " + field + " is not accessible");
+                    }
+                }
+
+                return findMatchModelField(nestedObject, fieldName.replaceFirst("^" + possibleNestedField, ""));
+            }
+            possibleNestedField.append(StringUtils.capitalize(nameParts[++partIndex]));
+        }
+
+        return null;
+    }
+
+    private String convertToCamelCase(String fieldName) {
+        if (fieldName == null || fieldName.isEmpty()) return fieldName;
+
+        switch (tableFieldCaseType) {
+            case CAMEL_CASE:
+                return fieldName;
+            case SNAKE_CASE:
+            case SCREAMING_SNAKE_CASE:
+                String[] parts = fieldName.split("_");
+                StringBuilder result = new StringBuilder(parts[0].toLowerCase());
+                for (int i = 1; i < parts.length; i++) {
+                    if (!parts[i].isEmpty()) {
+                        result.append(Character.toUpperCase(parts[i].charAt(0)))
+                              .append(parts[i].substring(1).toLowerCase());
+                    }
+                }
+                return result.toString();
+            case KEBAB_CASE:
+                String[] kebabParts = fieldName.split("-");
+                StringBuilder kebabResult = new StringBuilder(kebabParts[0].toLowerCase());
+                for (int i = 1; i < kebabParts.length; i++) {
+                    if (!kebabParts[i].isEmpty()) {
+                        kebabResult.append(Character.toUpperCase(kebabParts[i].charAt(0)))
+                                   .append(kebabParts[i].substring(1).toLowerCase());
+                    }
+                }
+                return kebabResult.toString();
+            default:
+                return fieldName;
+        }
     }
 
     private void handleLeftoverCollector(Object instance,
