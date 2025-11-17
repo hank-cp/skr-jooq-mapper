@@ -11,6 +11,7 @@ import org.laxture.skr.jooq.mapper.SkrRecordMapperProvider;
 import org.laxture.skr.jooq.mapper.TableFieldCaseType;
 import org.laxture.skr.jooq.mapper.converter.ConverterRegistry;
 import org.laxture.skr.jooq.mapper.converter.json.JsonArrayConverter;
+import org.laxture.skr.jooq.mapper.converter.json.JsonObject2MapConverter;
 import org.laxture.skr.jooq.mapper.converter.json.JsonObjectConverter;
 import org.laxture.skr.jooq.mapper.misc.ObjectMapperConfigurer;
 import org.laxture.skr.jooq.test.model.EducationExperience;
@@ -35,8 +36,9 @@ class SkrRecordMapperTest {
         objectMapper = ObjectMapperConfigurer.setupPersistentObjectMapper(new ObjectMapper());
 
         ConverterRegistry converterRegistry = new ConverterRegistry();
-        converterRegistry.registerConverter(new JsonObjectConverter<EducationExperience>(objectMapper), null);
-        converterRegistry.registerConverter(new JsonArrayConverter<EducationExperience>(objectMapper), null);
+        converterRegistry.registerConverter(new JsonObjectConverter<>(objectMapper, EducationExperience.class), null);
+        converterRegistry.registerConverter(new JsonArrayConverter<>(objectMapper, EducationExperience.class), null);
+        converterRegistry.registerConverter(new JsonObject2MapConverter(objectMapper), null);
 
         connection = DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "");
 
@@ -77,9 +79,9 @@ class SkrRecordMapperTest {
             VALUES ('Skr', 30, '2023-01-01 12:00:00', '2000-01-01', 
                     '123 Main St', 'Apt 4B', 'New York', 
                     'https://avatar.com/hank.jpg', 
-                    '[{"institute":"MIT","major":"CS","start_date":"2018-09-01","end_date":"2022-06-01"},{"institute":"MIT","major":"Math","start_date":"2022-09-01","end_date":"2026-06-01"}]', 
-                    '{"institute":"MIT","major":"CS","start_date":"2018-09-01","end_date":"2022-06-01"}', 
-                    '{"habit":"reading", "married":true}', ARRAY[1,2,3], 'note', '{}');
+                    JSON '[{"institute":"MIT","major":"CS"},{"institute":"MIT","major":"Math"}]', 
+                    JSON '{"institute":"MIT","major":"CS"}', 
+                    JSON '{"habit":"reading", "married":true}', ARRAY[1,2,3], 'note', '{}');
         """);
     }
 

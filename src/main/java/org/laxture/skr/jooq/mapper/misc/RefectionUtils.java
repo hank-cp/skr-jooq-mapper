@@ -544,7 +544,7 @@ public final class RefectionUtils {
         try {
             field.setAccessible(true);
             field.set(target, value);
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Set field "+field.getName()+" failed.", e);
         }
     }

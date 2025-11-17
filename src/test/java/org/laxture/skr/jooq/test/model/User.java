@@ -46,9 +46,6 @@ public class User implements MappingHook {
     @Transient
     private boolean postMappingCalled = false;
 
-    public User() {
-    }
-
     @Override
     public void postMapping() {
         this.postMappingCalled = true;

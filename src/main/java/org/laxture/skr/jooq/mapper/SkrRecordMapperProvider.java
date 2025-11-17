@@ -62,7 +62,7 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
                 // find model field, convert and set value
                 RefectionUtils.FieldTuple modelField = RefectionUtils.findMatchModelField(modelInstance, fieldName);
                 if (modelField != null) {
-                    Object converted = convertFieldValue(jVal, modelField.getField().getType());
+                    Object converted = convertFieldValue(jVal, modelField.getField().getGenericType());
                     if (converted == null) continue;
                     RefectionUtils.setFieldValue(
                         modelField.getOwner(), modelField.getField(), converted);
@@ -80,7 +80,7 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
     }
 
     @SuppressWarnings("unchecked")
-    private <ModelType, JooqType> ModelType convertFieldValue(JooqType jVal, Class<?> modelType) {
+    private <ModelType, JooqType> ModelType convertFieldValue(JooqType jVal, java.lang.reflect.Type modelType) {
         if (jVal == null) return null;
 
         SkrJooqConverter<ModelType, JooqType> converter =

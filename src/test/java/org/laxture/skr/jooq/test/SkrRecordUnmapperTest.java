@@ -1,24 +1,21 @@
 package org.laxture.skr.jooq.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jooq.*;
+import org.jooq.Configuration;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.laxture.skr.jooq.mapper.SkrRecordUnmapperProvider;
 import org.laxture.skr.jooq.mapper.TableFieldCaseType;
 import org.laxture.skr.jooq.mapper.converter.ConverterRegistry;
 import org.laxture.skr.jooq.mapper.converter.json.JsonArrayConverter;
 import org.laxture.skr.jooq.mapper.converter.json.JsonObjectConverter;
 import org.laxture.skr.jooq.mapper.misc.ObjectMapperConfigurer;
-import org.laxture.skr.jooq.test.model.Address;
 import org.laxture.skr.jooq.test.model.EducationExperience;
-import org.laxture.skr.jooq.test.model.User;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class SkrRecordUnmapperTest {
 
@@ -31,8 +28,8 @@ class SkrRecordUnmapperTest {
         objectMapper = ObjectMapperConfigurer.setupPersistentObjectMapper(new ObjectMapper());
 
         ConverterRegistry converterRegistry = new ConverterRegistry();
-        converterRegistry.registerConverter(new JsonObjectConverter<EducationExperience>(objectMapper), null);
-        converterRegistry.registerConverter(new JsonArrayConverter<EducationExperience>(objectMapper), null);
+        converterRegistry.registerConverter(new JsonObjectConverter<>(objectMapper, EducationExperience.class), null);
+        converterRegistry.registerConverter(new JsonArrayConverter<>(objectMapper, EducationExperience.class), null);
 
         connection = DriverManager.getConnection("jdbc:h2:mem:test2;DB_CLOSE_DELAY=-1", "sa", "");
 
