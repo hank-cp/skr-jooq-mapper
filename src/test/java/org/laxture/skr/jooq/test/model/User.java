@@ -1,18 +1,49 @@
 package org.laxture.skr.jooq.test.model;
 
+import lombok.Data;
 import org.laxture.skr.jooq.mapper.annotation.LeftoverCollector;
+import org.laxture.skr.jooq.mapper.annotation.Transient;
 import org.laxture.skr.jooq.mapper.hook.MappingHook;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
+@Data
 public class User implements MappingHook {
+
+    private long id;
+
     private String name;
     private Integer age;
+
+    // test java.time
+    private LocalDateTime createdAt;
+    private LocalDate birthDate;
+
+    // test Nested Object
     private Address address;
+
+    // test Nested Object with two words in field name
+    private UserProfile userProfile;
+
+    // Test Json to object list
+    private List<EducationExperience> eduExperiences;
+
+    // Test Json object
+    private EducationExperience recentEducExperience;
+
+    // Test Json to Map
+    private Map<String, Object> metaInfo;
+
+    // Test Json to primitive list
+    private List<Long> friendIds;
 
     @LeftoverCollector
     private Map<String, Object> extras;
 
+    @Transient
     private boolean postMappingCalled = false;
 
     public User() {
@@ -21,41 +52,5 @@ public class User implements MappingHook {
     @Override
     public void postMapping() {
         this.postMappingCalled = true;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Integer getAge() {
-        return age;
-    }
-
-    public void setAge(Integer age) {
-        this.age = age;
-    }
-
-    public Address getAddress() {
-        return address;
-    }
-
-    public void setAddress(Address address) {
-        this.address = address;
-    }
-
-    public Map<String, Object> getExtras() {
-        return extras;
-    }
-
-    public void setExtras(Map<String, Object> extras) {
-        this.extras = extras;
-    }
-
-    public boolean isPostMappingCalled() {
-        return postMappingCalled;
     }
 }

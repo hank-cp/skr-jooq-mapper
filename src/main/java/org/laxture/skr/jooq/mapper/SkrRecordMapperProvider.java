@@ -1,25 +1,18 @@
 package org.laxture.skr.jooq.mapper;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.jooq.*;
 import org.jooq.Record;
 import org.laxture.skr.jooq.mapper.annotation.LeftoverCollector;
-import org.laxture.skr.jooq.mapper.annotation.MappingInstantiator;
 import org.laxture.skr.jooq.mapper.converter.ConverterRegistry;
 import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.hook.MappingHook;
-import org.laxture.skr.jooq.mapper.misc.TypeHelper;
+import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 @Slf4j
 public class SkrRecordMapperProvider implements RecordMapperProvider {
@@ -58,26 +51,23 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
                 }
             }
 
-            E modelInstance = createInstance(modelType);
+            E modelInstance = RefectionUtils.createInstance(modelType);
             Set<String> processedFields = new HashSet<>();
+            Map<RefectionUtils.FieldTuple, Boolean> nestedObjectFieldTouchFlags = new HashMap<>();
 
-            for (Field<?> field : record.fields()) {
-                Object jVal = field.get(record);
-                String fieldName = convertToCamelCase(field.getName());
+            for (Field<?> recordField : record.fields()) {
+                Object jVal = recordField.get(record);
+                String fieldName = convertToCamelCase(recordField.getName());
 
                 // find model field, convert and set value
-                TypeHelper.FieldTuple matchedField = findMatchModelField(modelInstance, fieldName);
-                if (matchedField == null) {
-                    Object converted = convertFieldValue(jVal, matchedField.getField().getType());
+                RefectionUtils.FieldTuple modelField = RefectionUtils.findMatchModelField(modelInstance, fieldName);
+                if (modelField != null) {
+                    Object converted = convertFieldValue(jVal, modelField.getField().getType());
                     if (converted == null) continue;
-                    matchedField.getField().setAccessible(true);
-                    try {
-                        matchedField.getField().set(matchedField.getOwner(), converted);
-                    } catch (IllegalAccessException e) {
-                        throw new IllegalStateException("Field " + matchedField.getField() + " is not accessible");
-                    }
-
-                    processedFields.add(field.getName());
+                    RefectionUtils.setFieldValue(
+                        modelField.getOwner(), modelField.getField(), converted);
+                    processedFields.add(recordField.getName());
+                    modelField.settle();
                 }
             }
             handleLeftoverCollector(modelInstance, record, processedFields, modelType);
@@ -102,80 +92,6 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
         }
 
         return converter.convertToModelType(jVal);
-    }
-
-    private <T> T createInstance(Class<T> clazz) {
-        Supplier<T> instructor = null;
-
-        for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
-            if (constructor.getParameterCount() != 0) continue;
-            instructor = () -> {
-                constructor.setAccessible(true);
-                try {
-                    return (T) constructor.newInstance();
-                } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                    throw new IllegalStateException("Constructor " + constructor + " is not accessible");
-                }
-            };
-            if (constructor.isAnnotationPresent(MappingInstantiator.class)) {
-                return instructor.get();
-            }
-        }
-
-        for (Method method : clazz.getDeclaredMethods()) {
-            if (method.isAnnotationPresent(MappingInstantiator.class)
-                && Modifier.isStatic(method.getModifiers())
-                && clazz.isAssignableFrom(method.getReturnType())) {
-                method.setAccessible(true);
-                try {
-                    return (T) method.invoke(null);
-                } catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new IllegalStateException("Builder " + method + " is not accessible");
-                }
-            }
-        }
-
-        if (instructor != null) {
-            return instructor.get();
-        }
-
-        throw new IllegalStateException("No constructor found for " + clazz);
-    }
-
-    private TypeHelper.FieldTuple findMatchModelField(Object modelInstance, String fieldName) {
-        java.lang.reflect.Field field = TypeHelper.findField(modelInstance.getClass(), fieldName);
-        if (field != null) {
-            return new TypeHelper.FieldTuple(field, modelInstance);
-        }
-
-        String[] nameParts = StringUtils.splitByCharacterTypeCamelCase(fieldName);
-        int partIndex = 0;
-        StringBuilder possibleNestedField = new StringBuilder(nameParts[partIndex]);
-        while (!possibleNestedField.toString().equals(fieldName)) {
-            field = TypeHelper.findField(modelInstance.getClass(), fieldName);
-            if (field != null && !TypeHelper.isPrimitive(field.getType())) {
-                Object nestedObject;
-                try {
-                    nestedObject = field.get(modelInstance);
-                } catch (IllegalAccessException e) {
-                    throw new IllegalStateException("Field " + field + " is not accessible");
-                }
-                if (nestedObject == null) {
-                    nestedObject = createInstance(field.getType());
-                    field.setAccessible(true);
-                    try {
-                        field.set(modelInstance, nestedObject);
-                    } catch (IllegalAccessException e) {
-                        throw new IllegalStateException("Field " + field + " is not accessible");
-                    }
-                }
-
-                return findMatchModelField(nestedObject, fieldName.replaceFirst("^" + possibleNestedField, ""));
-            }
-            possibleNestedField.append(StringUtils.capitalize(nameParts[++partIndex]));
-        }
-
-        return null;
     }
 
     private String convertToCamelCase(String fieldName) {
@@ -213,7 +129,7 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
     private void handleLeftoverCollector(Object instance,
                                          Record record, Set<String> processedFields,
                                          Class<?> modelType) {
-        java.lang.reflect.Field leftoverField = TypeHelper.findFieldAnnotatedWith(modelType, LeftoverCollector.class);
+        java.lang.reflect.Field leftoverField = RefectionUtils.findFieldAnnotatedWith(modelType, LeftoverCollector.class);
 
         // collect leftover fields
         Map<String, Object> leftoverMap = new HashMap<>();
@@ -227,11 +143,6 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
         if (leftoverMap.isEmpty()
             || leftoverField == null
             || !Map.class.isAssignableFrom(leftoverField.getType())) return;
-        leftoverField.setAccessible(true);
-        try {
-            leftoverField.set(instance, leftoverMap);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException("Leftover collector field " + leftoverField + " is not accessible");
-        }
+        RefectionUtils.setFieldValue(instance, leftoverField, leftoverMap);
     }
 }

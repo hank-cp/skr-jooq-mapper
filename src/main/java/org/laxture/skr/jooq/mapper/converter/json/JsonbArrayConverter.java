@@ -6,7 +6,7 @@ import lombok.NonNull;
 import org.jooq.JSONB;
 import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.misc.MapperConversionException;
-import org.laxture.skr.jooq.mapper.misc.TypeHelper;
+import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
 
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
@@ -25,9 +25,9 @@ public class JsonbArrayConverter<ModelType> implements SkrJooqConverter<List<Mod
     public int match(@NonNull Type modelType, @NonNull Type jooqType) {
         if (modelType instanceof ParameterizedType
             && List.class.isAssignableFrom((Class<?>) ((ParameterizedType) modelType).getRawType())
-            && TypeHelper.areEquals(TypeHelper.getComponentTypeOfListOrArray(modelType), modelType)
-            && TypeHelper.isAssignable(JSONB.class, jooqType)) {
-            return 9;
+            && RefectionUtils.areEquals(RefectionUtils.getComponentTypeOfListOrArray(modelType), modelType)
+            && RefectionUtils.isAssignable(JSONB.class, jooqType)) {
+            return 11;
         }
         return MISMATCH;
     }

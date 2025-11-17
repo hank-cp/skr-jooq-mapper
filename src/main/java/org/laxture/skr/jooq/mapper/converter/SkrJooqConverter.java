@@ -1,7 +1,7 @@
 package org.laxture.skr.jooq.mapper.converter;
 
 import lombok.NonNull;
-import org.laxture.skr.jooq.mapper.misc.TypeHelper;
+import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
 
 import java.lang.reflect.Type;
 
@@ -10,13 +10,13 @@ public interface SkrJooqConverter<ModelType, JooqType> {
     int MISMATCH = -1;
 
     default Type getModelType() {
-        Type[] genericTypes = TypeHelper.getGenericParameterForClass(this.getClass(), SkrJooqConverter.class);
+        Type[] genericTypes = RefectionUtils.getGenericParameterForClass(this.getClass(), SkrJooqConverter.class);
         assert genericTypes != null && genericTypes.length == 2;
         return genericTypes[0];
     }
 
     default Type getJooqType() {
-        Type[] genericTypes = TypeHelper.getGenericParameterForClass(this.getClass(), SkrJooqConverter.class);
+        Type[] genericTypes = RefectionUtils.getGenericParameterForClass(this.getClass(), SkrJooqConverter.class);
         assert genericTypes != null && genericTypes.length == 2;
         return genericTypes[1];
     }
@@ -28,8 +28,8 @@ public interface SkrJooqConverter<ModelType, JooqType> {
      *         Built-in converters come with priority 10. Return priority above 10 will override the built-in converters.
      */
     default int match(Type modelType, Type jooqType) {
-        if (TypeHelper.isAssignable(getModelType(), modelType)
-            && TypeHelper.isAssignable(getJooqType(), jooqType)) return 10;
+        if (RefectionUtils.isAssignable(getModelType(), modelType)
+            && RefectionUtils.isAssignable(getJooqType(), jooqType)) return 10;
         return MISMATCH;
     }
 

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.JSONB;
 import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.misc.MapperConversionException;
-import org.laxture.skr.jooq.mapper.misc.TypeHelper;
+import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
 
 import java.io.IOException;
 
@@ -29,7 +29,7 @@ public class JsonbObjectConverter<ModelType> implements SkrJooqConverter<ModelTy
     public ModelType convertToModelType(JSONB jVal) {
         if ("null".equals(jVal.toString())) return null;
         try {
-            return objectMapper.convertValue(jVal, TypeHelper.toClass(getModelType()));
+            return objectMapper.convertValue(jVal, RefectionUtils.toClass(getModelType()));
         } catch (IllegalArgumentException e) {
             throw new MapperConversionException(getJooqType(), getModelType(), e);
         }

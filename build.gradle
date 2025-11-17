@@ -18,6 +18,7 @@ dependencies {
 
     api "org.jooq:jooq:${jooq_version}"
     api 'org.apache.commons:commons-lang3:3.19.0'
+    api 'commons-beanutils:commons-beanutils:1.11.0'
     implementation "com.fasterxml.jackson.core:jackson-core:${jackson_version}"
     implementation "com.fasterxml.jackson.core:jackson-databind:${jackson_version}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jackson_version}"
@@ -26,6 +27,7 @@ dependencies {
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testImplementation 'org.hamcrest:hamcrest:3.0'
     testRuntimeOnly 'com.h2database:h2:2.3.232'
 }
 

@@ -4,9 +4,7 @@ import lombok.NonNull;
 import org.laxture.skr.jooq.mapper.converter.datetime.Date2StringConverter;
 import org.laxture.skr.jooq.mapper.converter.datetime.Time2StringConverter;
 import org.laxture.skr.jooq.mapper.converter.datetime.Timestamp2StringConverter;
-import org.laxture.skr.jooq.mapper.converter.jsr310.LocalDate2StringConverter;
-import org.laxture.skr.jooq.mapper.converter.jsr310.LocalDateTime2StringConverter;
-import org.laxture.skr.jooq.mapper.converter.jsr310.LocalTime2StringConverter;
+import org.laxture.skr.jooq.mapper.converter.jsr310.*;
 import org.laxture.skr.jooq.mapper.converter.number.Double2BigDecimalConverter;
 import org.laxture.skr.jooq.mapper.converter.number.Long2BigIntegerConverter;
 
@@ -33,6 +31,9 @@ public class ConverterRegistry {
         converters.put(new LocalDate2StringConverter(), null);
         converters.put(new LocalDateTime2StringConverter(), null);
         converters.put(new LocalTime2StringConverter(), null);
+        converters.put(new LocalDate2DateConverter(), null);
+        converters.put(new LocalDateTime2TimestampConverter(), null);
+        converters.put(new LocalTime2TimeConverter(), null);
     }
 
     public void registerConverter(@NonNull SkrJooqConverter<?, ?> converter, String registryKey) {
