@@ -1,10 +1,13 @@
 package org.laxture.skr.jooq.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NonNull;
 import org.apache.commons.beanutils.ConvertUtils;
 import org.jooq.JSON;
 import org.junit.jupiter.api.Test;
 import org.laxture.skr.jooq.mapper.converter.ArrayConverter;
+import org.laxture.skr.jooq.mapper.converter.ConverterRegistry;
+import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.converter.json.JsonArrayConverter;
 import org.laxture.skr.jooq.mapper.converter.json.JsonObjectConverter;
 import org.laxture.skr.jooq.mapper.converter.json.JsonbArrayConverter;
@@ -179,5 +182,100 @@ class ConverterTest {
         assertThat(listMap, notNullValue());
         assertThat(listMap.size(), is(3));
         assertThat(listMap.get(0).get("a"), is(1));
+    }
+
+    /**
+     * 测试 ConverterRegistry 缓存命中
+     * 第一次调用 matchConverter() 后，第二次用相同参数调用应该返回相同的 converter 实例（缓存命中）
+     */
+    @Test
+    public void testConverterRegistryCacheHit() {
+        ConverterRegistry registry = new ConverterRegistry();
+
+        // 第一次调用 matchConverter()
+        SkrJooqConverter<?, ?> converter1 = registry.matchConverter(String.class, String.class);
+        assertThat(converter1, notNullValue());
+
+        Map cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        assertThat(cache.size(), is(1));
+    }
+
+    /**
+     * 测试注册新 converter 后缓存失效
+     * 注册新的 converter 后，缓存应该被清除，matchConverter() 可能返回新注册的 converter
+     */
+    @Test
+    public void testConverterRegistryCacheInvalidationOnRegister() {
+        ConverterRegistry registry = new ConverterRegistry();
+
+        // 第一次调用建立缓存
+        SkrJooqConverter<?, ?> originalConverter = registry.matchConverter(String.class, String.class);
+        assertThat(originalConverter, notNullValue());
+        Map cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        assertThat(cache.size(), is(1));
+
+        // 注册一个高优先级的自定义 converter
+        SkrJooqConverter<String, String> customConverter = new SkrJooqConverter<>() {
+            @Override
+            public int match(Type modelType, Type jooqType) {
+                if (modelType == String.class && jooqType == String.class) {
+                    return 100; // 高优先级
+                }
+                return MISMATCH;
+            }
+
+            @Override
+            public String convertToJooqType(@NonNull String mVal, Class<?> jooqType) {
+                return mVal;
+            }
+
+            @Override
+            public String convertToModelType(@NonNull String jVal, Type modelType) {
+                return jVal;
+            }
+        };
+
+        registry.registerConverter(customConverter, "test-key");
+
+        // 注册新 converter 后，缓存应该被清除，返回新的高优先级 converter
+        SkrJooqConverter<?, ?> newConverter = registry.matchConverter(String.class, String.class);
+        assertThat(newConverter, notNullValue());
+        assertThat(newConverter, sameInstance(customConverter));
+        assertThat(newConverter, not(sameInstance(originalConverter)));
+        cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        assertThat(cache.size(), is(1));
+
+        // 注销自定义 converter
+        registry.unregisterConverter("test-key");
+        cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        assertThat(cache.size(), is(0));
+        // 缓存应该被清除，返回原始的内置 converter
+        SkrJooqConverter<?, ?> converter2 = registry.matchConverter(String.class, String.class);
+        assertThat(converter2, notNullValue());
+        assertThat(converter2, not(sameInstance(customConverter)));
+    }
+
+    /**
+     * 测试 clearCache() 方法
+     * 显式调用 clearCache() 后，缓存应该被清除
+     */
+    @Test
+    public void testConverterRegistryClearCache() {
+        ConverterRegistry registry = new ConverterRegistry();
+
+        // 第一次调用建立缓存
+        SkrJooqConverter<?, ?> converter1 = registry.matchConverter(String.class, String.class);
+        assertThat(converter1, notNullValue());
+        Map cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        assertThat(cache.size(), is(1));
+
+        // 验证缓存命中
+        SkrJooqConverter<?, ?> converter2 = registry.matchConverter(String.class, String.class);
+        assertThat(converter2, sameInstance(converter1));
+
+        // 显式清除缓存
+        registry.clearCache();
+        cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        assertThat(cache.size(), is(0));
     }
 }

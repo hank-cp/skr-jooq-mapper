@@ -22,10 +22,8 @@ import org.laxture.skr.jooq.mapper.converter.datetime.Timestamp2StringConverter;
 import org.laxture.skr.jooq.mapper.converter.jsr310.*;
 
 import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static org.laxture.skr.jooq.mapper.converter.SkrJooqConverter.MISMATCH;
@@ -40,7 +38,35 @@ import static org.laxture.skr.jooq.mapper.converter.SkrJooqConverter.MISMATCH;
  */
 public class ConverterRegistry {
 
+    /**
+     * Composite key for caching converter matching results.
+     */
+    private static class ConverterCacheKey {
+        private final Type modelType;
+        private final Type jooqType;
+
+        public ConverterCacheKey(Type modelType, Type jooqType) {
+            this.modelType = modelType;
+            this.jooqType = jooqType;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ConverterCacheKey that = (ConverterCacheKey) o;
+            return Objects.equals(modelType, that.modelType) &&
+                   Objects.equals(jooqType, that.jooqType);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(modelType, jooqType);
+        }
+    }
+
     private final Map<SkrJooqConverter<?, ?>, String> converters = Collections.synchronizedMap(new HashMap<>());
+    private final Map<ConverterCacheKey, SkrJooqConverter<?, ?>> converterCache = new ConcurrentHashMap<>();
 
     public ConverterRegistry() {
         converters.put(new DirectConverter(), null);
@@ -65,6 +91,7 @@ public class ConverterRegistry {
      */
     public void registerConverter(@NonNull SkrJooqConverter<?, ?> converter, String registryKey) {
         converters.put(converter, registryKey);
+        clearCache();
     }
 
     /**
@@ -78,18 +105,29 @@ public class ConverterRegistry {
             .map(Map.Entry::getKey)
             .collect(Collectors.toList());
         removeCandidates.forEach(converters::remove);
+        clearCache();
     }
 
     /**
      * Finds the best matching converter for the given model and Jooq types.
      * <p>
      * The converter with the highest matching priority is returned.
+     * Results are cached for performance optimization.
      *
      * @param modelType the model type
      * @param jooqType the Jooq type
      * @return the best matching converter, or null if no match found
      */
     public SkrJooqConverter<?, ?> matchConverter(Type modelType, Type jooqType) {
+        ConverterCacheKey cacheKey = new ConverterCacheKey(modelType, jooqType);
+        
+        // Check cache first
+        SkrJooqConverter<?, ?> cachedConverter = converterCache.get(cacheKey);
+        if (cachedConverter != null) {
+            return cachedConverter;
+        }
+        
+        // Cache miss, perform matching
         int maxPriority = MISMATCH;
         SkrJooqConverter<?, ?> matchedConverter = null;
         for (SkrJooqConverter<?, ?> converter : converters.keySet()) {
@@ -100,6 +138,21 @@ public class ConverterRegistry {
                 matchedConverter = converter;
             }
         }
+        
+        // Cache the result (including null results to avoid repeated failed lookups)
+        if (matchedConverter != null) {
+            converterCache.put(cacheKey, matchedConverter);
+        }
+        
         return matchedConverter;
+    }
+
+    /**
+     * Clears all cached converter matching results.
+     * <p>
+     * This method is automatically called when converters are registered or unregistered.
+     */
+    public void clearCache() {
+        converterCache.clear();
     }
 }

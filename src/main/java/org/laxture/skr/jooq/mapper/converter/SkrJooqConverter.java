@@ -53,7 +53,27 @@ public interface SkrJooqConverter<ModelType, JooqType> {
         return MISMATCH;
     }
 
+    /**
+     * Check if the converter is cacheable.
+     * @return true if the converter is cacheable.
+     */
+    default boolean cacheable() {
+        return true;
+    }
+
+    /**
+     * Convert model value to jooq value.
+     * @param mVal the model value to convert.
+     * @param jooqType the jooq type to convert to.
+     * @return the converted jooq value.
+     */
     JooqType convertToJooqType(@NonNull ModelType mVal, Class<?> jooqType);
 
+    /**
+     * Convert jooq value to model value.
+     * @param jVal the jooq value to convert.
+     * @param modelType the model type to convert to.
+     * @return the converted model value.
+     */
     ModelType convertToModelType(@NonNull JooqType jVal, Type modelType);
 }
