@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2019-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.laxture.skr.jooq.mapper.misc;
 
 import lombok.Getter;
@@ -14,6 +29,11 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+/**
+ * Utility class for refection operations.
+ *
+ * @author <a href="https://github.com/hank-cp">Hank CP</a>
+ */
 public final class RefectionUtils {
 
     private RefectionUtils() {}
@@ -23,6 +43,12 @@ public final class RefectionUtils {
     //*************************************************************************
 
     @SuppressWarnings("unchecked")
+    /**
+     * Toclass operation.
+     *
+     * @param target the target
+     * @return the result
+     */
     public static <T> Class<T> toClass(Type target) {
         if (target instanceof Class) {
             return (Class<T>) target;
@@ -38,6 +64,13 @@ public final class RefectionUtils {
         throw new UnsupportedOperationException("Cannot extract class from type " + target + " " + target.getClass());
     }
 
+    /**
+     * Gets the classloader.
+     *
+     * @param target the target
+     * @param defaultClassLoader the defaultClassLoader
+     * @return the result
+     */
     public static ClassLoader getClassLoader(Type target, ClassLoader defaultClassLoader) {
         if (target == null) return defaultClassLoader;
         Class<?> clazz = toClass(target);
@@ -63,19 +96,43 @@ public final class RefectionUtils {
         return genericTypes;
     }
 
+    /**
+     * Checks if primitive.
+     *
+     * @param val the val
+     * @return the result
+     */
     public static boolean isPrimitive(Object val) {
         return isPrimitive(val.getClass());
     }
 
+    /**
+     * Checks if primitive.
+     *
+     * @param type the type
+     * @return the result
+     */
     public static boolean isPrimitive(Type type) {
         return wrappers.containsKey(type)
             || wrappers.containsValue(type);
     }
 
+    /**
+     * Checks if string.
+     *
+     * @param val the val
+     * @return the result
+     */
     public static boolean isString(Object val) {
         return String.class.isAssignableFrom(val.getClass());
     }
 
+    /**
+     * Wrap operation.
+     *
+     * @param target the target
+     * @return the result
+     */
     public static Class<?> wrap(Class<?> target) {
         if (target.isPrimitive()) {
             return wrappers.get(target);
@@ -84,6 +141,12 @@ public final class RefectionUtils {
         }
     }
 
+    /**
+     * Unwrap operation.
+     *
+     * @param target the target
+     * @return the result
+     */
     public static Class unwrap(Class target) {
         return wrappers.entrySet().stream()
             .filter(e -> e.getValue() == target)
@@ -92,16 +155,35 @@ public final class RefectionUtils {
             .orElse(target);
     }
 
+    /**
+     * Arecompatible operation.
+     *
+     * @param target the target
+     * @param source the source
+     * @return the result
+     */
     public static  boolean areCompatible(Class<?> target, Class<?> source) {
         Class<?> wrapTarget = wrap(target);
         Class<?> wrapSource = wrap(source);
         return wrapTarget.isAssignableFrom(wrapSource);
     }
 
+    /**
+     * Checks if number.
+     *
+     * @param target the target
+     * @return the result
+     */
     public static boolean isNumber(Type target) {
         return Number.class.isAssignableFrom(wrap(RefectionUtils.toClass(target)));
     }
 
+    /**
+     * Wraparray operation.
+     *
+     * @param array the array
+     * @return the result
+     */
     public static Object[] wrapArray(Object array) {
         if (array == null) return null;
         if (!array.getClass().isArray()) {
@@ -142,10 +224,22 @@ public final class RefectionUtils {
         wrappers.put(void.class, Void.class);
     }
 
+    /**
+     * Checks if array.
+     *
+     * @param outType the outType
+     * @return the result
+     */
     public static boolean isArray(Type outType) {
         return RefectionUtils.toClass(outType).isArray();
     }
 
+    /**
+     * Gets the componenttypeoflistorarray.
+     *
+     * @param outType the outType
+     * @return the result
+     */
     public static Type getComponentTypeOfListOrArray(Type outType) {
         Class<?> target = toClass(outType);
         if (target.isArray()) {
@@ -162,6 +256,12 @@ public final class RefectionUtils {
         return Object.class;
     }
 
+    /**
+     * Gets the keyvaluetypeofmap.
+     *
+     * @param outType the outType
+     * @return the result
+     */
     public static MapEntryTypes getKeyValueTypeOfMap(Type outType) {
         Type[] parameterTypes = getGenericParameterForClass(outType, Map.class);
         if (parameterTypes != null) {
@@ -194,19 +294,46 @@ public final class RefectionUtils {
 
 
 
+    /**
+     * Checks if assignable.
+     *
+     * @param type the type
+     * @param from the from
+     * @return the result
+     */
     public static boolean isAssignable(Type type, Type from) {
         return isAssignable(RefectionUtils.toBoxedClass(type), from);
     }
 
+    /**
+     * Checks if assignable.
+     *
+     * @param class1 the class1
+     * @param from the from
+     * @return the result
+     */
     public static boolean isAssignable(Class<?> class1, Type from) {
         return class1.isAssignableFrom(toBoxedClass(from));
     }
 
+    /**
+     * Checks if javalang.
+     *
+     * @param target the target
+     * @return the result
+     */
     public static boolean isJavaLang(Type target) {
         Class<?> clazz = RefectionUtils.toClass(target);
         return clazz.isPrimitive() || (clazz.getPackage() != null && clazz.getPackage().getName().equals("java.lang"));
     }
 
+    /**
+     * Checks if inpackage.
+     *
+     * @param target the target
+     * @param packagePredicate the packagePredicate
+     * @return the result
+     */
     public static boolean isInPackage(Type target, Predicate<String> packagePredicate) {
         Class<?> clazz = RefectionUtils.toClass(target);
         Package clazzPackage = clazz.getPackage();
@@ -216,15 +343,33 @@ public final class RefectionUtils {
         return false;
     }
 
+    /**
+     * Checks if enum.
+     *
+     * @param target the target
+     * @return the result
+     */
     public static boolean isEnum(Type target) {
         Class<?> clazz = RefectionUtils.toClass(target);
         return clazz.isEnum();
     }
 
+    /**
+     * Toboxedclass operation.
+     *
+     * @param type the type
+     * @return the result
+     */
     public static Class<?> toBoxedClass(Type type) {
         return RefectionUtils.toBoxedClass(toClass(type));
     }
 
+    /**
+     * Toboxedclass operation.
+     *
+     * @param target the target
+     * @return the result
+     */
     public static Class<?> toBoxedClass(Class<?> target) {
         if (target.isPrimitive()) {
             Class<?> clazz = wrappers.get(target);
@@ -237,10 +382,24 @@ public final class RefectionUtils {
         }
     }
 
+    /**
+     * Areequals operation.
+     *
+     * @param target the target
+     * @param clazz the clazz
+     * @return the result
+     */
     public static boolean areEquals(Type target, Type clazz) {
         return RefectionUtils.toClass(clazz).equals(RefectionUtils.toClass(target));
     }
 
+    /**
+     * Gets the genericparameterforclass.
+     *
+     * @param type the type
+     * @param interfaceClass the interfaceClass
+     * @return the result
+     */
     public static Type[] getGenericParameterForClass(Type type, Class<?> interfaceClass) {
 
         if (isAssignable(interfaceClass, type)) {
@@ -265,6 +424,12 @@ public final class RefectionUtils {
     }
 
 
+    /**
+     * Resolvetypevariables operation.
+     *
+     * @param source the source
+     * @param types the types
+     */
     public static void resolveTypeVariables(Type source, Type[] types) {
         for(int i = 0; i < types.length; i++) {
             Type t = types[i];
@@ -274,6 +439,13 @@ public final class RefectionUtils {
         }
     }
 
+    /**
+     * Resolvetypevariable operation.
+     *
+     * @param type the type
+     * @param t the t
+     * @return the result
+     */
     public static Type resolveTypeVariable(Type type, TypeVariable t) {
         TypeVariable<Class<Object>>[] typeParameters = RefectionUtils.toClass(type).getTypeParameters();
 
@@ -293,6 +465,12 @@ public final class RefectionUtils {
         return Object.class;
     }
 
+    /**
+     * Checks if kotlinclass.
+     *
+     * @param target the target
+     * @return the result
+     */
     public static boolean isKotlinClass(Type target) {
         Annotation[] annotations = RefectionUtils.toClass(target).getDeclaredAnnotations();
         if (annotations != null) {
@@ -348,6 +526,12 @@ public final class RefectionUtils {
     // Constructor Utils
     //*************************************************************************
 
+    /**
+     * Createinstance operation.
+     *
+     * @param clazz the clazz
+     * @return the result
+     */
     public static <T> T createInstance(Class<T> clazz) {
         Supplier<T> instructor = null;
 
@@ -390,6 +574,12 @@ public final class RefectionUtils {
     // Field Utils
     //*************************************************************************
 
+    /**
+     * Gets the allfields.
+     *
+     * @param clazz the clazz
+     * @return the result
+     */
     public static List<Field> getAllFields(Class<?> clazz) {
         List<Field> fields = new ArrayList<>();
         Class<?> current = clazz;
@@ -400,6 +590,13 @@ public final class RefectionUtils {
         return fields;
     }
 
+    /**
+     * Findfieldannotatedwith operation.
+     *
+     * @param clazz the clazz
+     * @param annotation the annotation
+     * @return the result
+     */
     public static Field findFieldAnnotatedWith(Class<?> clazz, Class<? extends Annotation> annotation) {
         for (Field field : getAllFields(clazz)) {
             if (field.isAnnotationPresent(annotation)) return field;
@@ -407,6 +604,13 @@ public final class RefectionUtils {
         return null;
     }
 
+    /**
+     * Findfield operation.
+     *
+     * @param clazz the clazz
+     * @param fieldName the fieldName
+     * @return the result
+     */
     public static Field findField(Class<?> clazz, String fieldName) {
         for (Field field : getAllFields(clazz)) {
             if (field.getName().equals(fieldName)) return field;
@@ -414,6 +618,13 @@ public final class RefectionUtils {
         return null;
     }
 
+    /**
+     * Findmatchmodelfield operation.
+     *
+     * @param modelInstance the modelInstance
+     * @param fieldName the fieldName
+     * @return the result
+     */
     public static RefectionUtils.FieldTuple findMatchModelField(Object modelInstance, String fieldName) {
         return findMatchModelField(modelInstance, fieldName, new ArrayList<>());
     }
@@ -484,6 +695,9 @@ public final class RefectionUtils {
             return field == that.field && owner == that.owner;
         }
 
+        /**
+         * Sets the tle.
+         */
         public void settle() {
             context.forEach(stub -> {
                 setFieldValue(stub.owner, stub.field, stub.nestedObject);
@@ -491,6 +705,13 @@ public final class RefectionUtils {
         }
     }
 
+    /**
+     * Gets the fieldvalue.
+     *
+     * @param target the target
+     * @param field the field
+     * @return the result
+     */
     public static <T> T getFieldValue(@NonNull Object target,
                                       @NonNull Field field) {
         try {
@@ -501,6 +722,13 @@ public final class RefectionUtils {
         }
     }
 
+    /**
+     * Gets the fieldvalue.
+     *
+     * @param target the target
+     * @param path the path
+     * @return the result
+     */
     public static <T> T getFieldValue(@NonNull Object target,
                                       @NonNull String path) {
         String[] fieldPath = path.split("\\.");
@@ -535,6 +763,13 @@ public final class RefectionUtils {
         return (T) obj;
     }
 
+    /**
+     * Gets the fieldclass.
+     *
+     * @param target the target
+     * @param fieldName the fieldName
+     * @return the result
+     */
     public static Class<?> getFieldClass(@NonNull Object target,
                                          @NonNull String fieldName) {
         try {
@@ -576,6 +811,13 @@ public final class RefectionUtils {
         }
     }
 
+    /**
+     * Sets the fieldvalue.
+     *
+     * @param target the target
+     * @param field the field
+     * @param value the value
+     */
     public static void setFieldValue(@NonNull Object target,
                                      @NonNull Field field,
                                      Object value) {
@@ -587,6 +829,13 @@ public final class RefectionUtils {
         }
     }
 
+    /**
+     * Sets the fieldvalue.
+     *
+     * @param target the target
+     * @param fieldName the fieldName
+     * @param value the value
+     */
     public static void setFieldValue(@NonNull Object target,
                                      @NonNull String fieldName,
                                      Object value) {
@@ -649,6 +898,15 @@ public final class RefectionUtils {
         copyFields(source, target, false, true, fields);
     }
 
+    /**
+     * Copyfields operation.
+     *
+     * @param source the source
+     * @param target the target
+     * @param ignoreNullField the ignoreNullField
+     * @param includeOrExclude the includeOrExclude
+     * @param fields the fields
+     */
     public static <E> void copyFields(@NonNull E source,
                                       @NonNull E target,
                                       boolean ignoreNullField,
@@ -740,6 +998,12 @@ public final class RefectionUtils {
         }
     }
 
+    /**
+     * Deepclone operation.
+     *
+     * @param o the o
+     * @return the result
+     */
     public static <T extends Serializable> T deepClone(@NonNull T o) {
         try {
             ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
@@ -757,6 +1021,14 @@ public final class RefectionUtils {
     // Method Utils
     //*************************************************************************
 
+    /**
+     * Gets the declaredmethod.
+     *
+     * @param clazz the clazz
+     * @param methodName the methodName
+     * @param parameterTypes the parameterTypes
+     * @return the result
+     */
     public static Method getDeclaredMethod(@NonNull Class<?> clazz,
                                            @NonNull String methodName,
                                            Class<?>... parameterTypes) {
@@ -772,6 +1044,14 @@ public final class RefectionUtils {
         return method;
     }
 
+    /**
+     * Gets the method.
+     *
+     * @param clazz the clazz
+     * @param methodName the methodName
+     * @param parameterTypes the parameterTypes
+     * @return the result
+     */
     public static Method getMethod(@NonNull Class<?> clazz,
                                    @NonNull String methodName,
                                    Class<?>... parameterTypes) {
@@ -787,6 +1067,14 @@ public final class RefectionUtils {
         return method;
     }
 
+    /**
+     * Callmethod operation.
+     *
+     * @param object the object
+     * @param methodName the methodName
+     * @param parameters the parameters
+     * @return the result
+     */
     public static <R, O> R callMethod(O object,
                                       @NonNull String methodName,
                                       Object... parameters) {
