@@ -23,12 +23,7 @@ jobs:
       with:
         java-version: 17
     # 测试多个 Spring Boot 版本的兼容性
-    - run: ./gradlew test build -PspringBootVersion=3.0.11 --rerun-tasks
-    - run: ./gradlew test build -PspringBootVersion=3.1.12 --rerun-tasks
-    - run: ./gradlew test build -PspringBootVersion=3.2.7 --rerun-tasks
-    - run: ./gradlew test build -PspringBootVersion=3.3.12 --rerun-tasks
-    - run: ./gradlew test build -PspringBootVersion=3.4.7 --rerun-tasks
-    - run: ./gradlew test build -PspringBootVersion=3.5.3 --rerun-tasks
+    - run: ./gradlew test --rerun-tasks
 
   publish-snapshot:
     runs-on: ubuntu-latest

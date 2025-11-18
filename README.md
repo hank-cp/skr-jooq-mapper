@@ -1,8 +1,14 @@
+[![GitHub release](https://img.shields.io/github/release/hank-cp/skr-jooq-mapper.svg)](https://github.com/hank-cp/skr-jooq-mapper/releases)
+![Maven Central](https://img.shields.io/maven-central/v/org.laxture.skr-jooq-mapper/skr-jooq-mapper.svg)
+![Test](https://github.com/hank-cp/skr-jooq-mapper/workflows/CI%20Test/badge.svg)
+![GitHub](https://img.shields.io/github/license/hank-cp/skr-jooq-mapper)
+![GitHub last commit](https://img.shields.io/github/last-commit/hank-cp/skr-jooq-mapper.svg)
+
 # skr-jooq-mapper
 
-[![Maven Central](https://img.shields.io/maven-central/v/org.laxture.skr-jooq-mapper/skr-jooq-mapper.svg)](https://search.maven.org/artifact/org.laxture.skr-jooq-mapper/skr-jooq-mapper)
-
 A lightweight, extensible ORM framework built on top of [jOOQ](https://www.jooq.org/) that provides bi-directional mapping between jOOQ Records and Java POJOs.
+
+[中文](README.zh-cn.md)
 
 ## Introduction
 

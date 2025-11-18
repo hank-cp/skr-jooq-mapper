@@ -1,6 +1,10 @@
-# skr-jooq-mapper
+[![GitHub release](https://img.shields.io/github/release/hank-cp/skr-jooq-mapper.svg)](https://github.com/hank-cp/skr-jooq-mapper/releases)
+![Maven Central](https://img.shields.io/maven-central/v/org.laxture.skr-jooq-mapper/skr-jooq-mapper.svg)
+![Test](https://github.com/hank-cp/skr-jooq-mapper/workflows/CI%20Test/badge.svg)
+![GitHub](https://img.shields.io/github/license/hank-cp/skr-jooq-mapper)
+![GitHub last commit](https://img.shields.io/github/last-commit/hank-cp/skr-jooq-mapper.svg)
 
-[![Maven Central](https://img.shields.io/maven-central/v/org.laxture.skr-jooq-mapper/skr-jooq-mapper.svg)](https://search.maven.org/artifact/org.laxture.skr-jooq-mapper/skr-jooq-mapper)
+# skr-jooq-mapper
 
 一个构建在 [jOOQ](https://www.jooq.org/) 之上的轻量级、可扩展的 ORM 框架,提供 jOOQ Records 与 Java POJO 之间的双向映射。
 

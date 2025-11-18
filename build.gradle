@@ -1,3 +1,14 @@
+def checkProperty(Project project, String propName) {
+    if (!project.hasProperty(propName)) return false
+    String prop = project.property(propName)
+    return prop != null && prop.length() > 0
+}
+
+def getPropertyOrElse(Project project, String propName, String alternative) {
+    if (!checkProperty(project, propName)) return alternative
+    return project.property(propName)
+}
+
 plugins {
     id 'java-library'
     id 'maven-publish'
@@ -10,7 +21,7 @@ repositories {
 }
 
 group = 'org.laxture.skr-jooq-mapper'
-version = '0.0.1'
+version = "${version}"
 
 dependencies {
     implementation "org.projectlombok:lombok:${lombokVersion}"
@@ -58,4 +69,105 @@ test {
         events "failed"
         exceptionFormat = "short"
     }
+}
+
+javadoc {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+tasks.register('sourcesJar', Jar) {
+    dependsOn classes
+    archiveClassifier.set('sources')
+    from sourceSets.main.allSource
+}
+
+tasks.register('javadocJar', Jar) {
+    dependsOn javadoc
+    archiveClassifier.set('javadoc')
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+    archives javadocJar
+}
+
+Properties localProp = new Properties()
+try {
+    localProp.load(project.rootProject.file('local.properties').newDataInputStream())
+} catch(Exception ignored) {}
+for (String propKey in localProp.keys()) {
+    ext.set(propKey, localProp.get(propKey))
+}
+ext."signing.secretKeyRingFile" = rootProject.file('publish.gpg')
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = project.getGroup()
+            version "${version}"
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            pom {
+                name = project.name
+                description = 'sbp introduce plugin oriented programming to Spring Boot'
+                url = 'https://github.com/hank-cp/sbp'
+                organization {
+                    name = 'org.laxture'
+                    url = 'https://laxture.org'
+                }
+                issueManagement {
+                    system = 'GitHub'
+                    url = 'https://github.com/hank-cp/sbp/issues'
+                }
+                license {
+                    name = 'Apache License 3.0'
+                    url = 'https://github.com/hank-cp/sbp/blob/master/LICENSE'
+                    distribution = 'repo'
+                }
+                scm {
+                    url = 'https://github.com/hank-cp/sbp'
+                    connection = 'scm:git:git://github.com/hank-cp/sbp.git'
+                    developerConnection = 'scm:git:ssh://git@github.com:hank-cp/sbp.git'
+                }
+                developers {
+                    developer {
+                        name = 'Hank CP'
+                        email = 'true.cp@gmail.com'
+                    }
+                }
+            }
+            repositories {
+                maven {
+                    def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+                    def stagingRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+                    url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : stagingRepoUrl
+                    credentials {
+                        username getPropertyOrElse(project, 'sonatypeUsername', '')
+                        password getPropertyOrElse(project, 'sonatypePassword', '')
+                    }
+                }
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+nmcpAggregation {
+    centralPortal {
+        username = getPropertyOrElse(project, 'sonatypeUsername', '')
+        password = getPropertyOrElse(project, 'sonatypePassword', '')
+        // publish manually from the portal
+        publishingType = "USER_MANAGED"
+        // or if you want to publish automatically
+//        publishingType = "AUTOMATIC"
+    }
+
+    // Publish all projects that apply the 'maven-publish' plugin
+    publishAllProjectsProbablyBreakingProjectIsolation()
 }
