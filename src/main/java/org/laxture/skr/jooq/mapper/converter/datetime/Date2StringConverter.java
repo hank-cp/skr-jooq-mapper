@@ -4,6 +4,7 @@ import lombok.NonNull;
 import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.misc.MapperConversionException;
 
+import java.lang.reflect.Type;
 import java.sql.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -23,12 +24,12 @@ public class Date2StringConverter implements SkrJooqConverter<Date, String> {
     }
 
     @Override
-    public String convertToJooqType(@NonNull Date mVal) {
+    public String convertToJooqType(@NonNull Date mVal, Class<?> jooqType) {
         return formatter.format(mVal);
     }
 
     @Override
-    public Date convertToModelType(@NonNull String jVal) {
+    public Date convertToModelType(@NonNull String jVal, Type modelType) {
         try {
             return new Date(formatter.parse(jVal).getTime());
         } catch (ParseException e) {

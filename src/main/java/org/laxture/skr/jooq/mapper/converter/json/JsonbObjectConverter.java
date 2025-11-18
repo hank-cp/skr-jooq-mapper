@@ -2,27 +2,36 @@ package org.laxture.skr.jooq.mapper.converter.json;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Getter;
 import org.jooq.JSONB;
 import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.misc.MapperConversionException;
 import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.Map;
 
-public class JsonbObjectConverter<ModelType> implements SkrJooqConverter<ModelType, JSONB> {
+public class JsonbObjectConverter implements SkrJooqConverter<Object, JSONB> {
 
     private final ObjectMapper objectMapper;
-    @Getter
-    protected final Class<ModelType> modelType;
 
-    public JsonbObjectConverter(ObjectMapper objectMapper, Class<ModelType> modelType) {
+    public JsonbObjectConverter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.modelType = modelType;
     }
 
     @Override
-    public JSONB convertToJooqType(ModelType mVal) {
+    public int match(Type modelType, Type jooqType) {
+        if (!RefectionUtils.isAssignable(Collection.class, RefectionUtils.toClass(modelType))
+            && !RefectionUtils.isAssignable(Map.class, RefectionUtils.toClass(modelType))
+            && RefectionUtils.isAssignable(JSONB.class, jooqType)) {
+            return 11;
+        }
+        return MISMATCH;
+    }
+
+    @Override
+    public JSONB convertToJooqType(Object mVal, Class<?> jooqType) {
         try {
             return JSONB.valueOf(objectMapper.writeValueAsString(mVal));
         } catch (IOException e) {
@@ -31,10 +40,10 @@ public class JsonbObjectConverter<ModelType> implements SkrJooqConverter<ModelTy
     }
 
     @Override
-    public ModelType convertToModelType(JSONB jVal) {
+    public Object convertToModelType(JSONB jVal, Type modelType) {
         if ("null".equals(jVal.toString())) return null;
         try {
-            return objectMapper.readValue(jVal.data(), RefectionUtils.toClass(getModelType()));
+            return objectMapper.readValue(jVal.data(), RefectionUtils.toClass(modelType));
         } catch (IllegalArgumentException | JsonProcessingException e) {
             throw new MapperConversionException(getJooqType(), getModelType(), e);
         }

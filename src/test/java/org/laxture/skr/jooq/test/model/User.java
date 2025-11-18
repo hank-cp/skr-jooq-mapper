@@ -32,7 +32,7 @@ public class User implements MappingHook {
     private List<EducationExperience> eduExperiences;
 
     // Test Json object
-    private EducationExperience recentEducExperience;
+    private EducationExperience recentEduExperience;
 
     // Test Json to Map
     private Map<String, Object> metaInfo;
@@ -42,6 +42,9 @@ public class User implements MappingHook {
 
     @LeftoverCollector
     private Map<String, Object> extras;
+
+    @Transient
+    public String immutable;
 
     @Transient
     private boolean postMappingCalled = false;

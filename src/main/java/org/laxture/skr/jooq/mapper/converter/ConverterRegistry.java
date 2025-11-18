@@ -5,8 +5,6 @@ import org.laxture.skr.jooq.mapper.converter.datetime.Date2StringConverter;
 import org.laxture.skr.jooq.mapper.converter.datetime.Time2StringConverter;
 import org.laxture.skr.jooq.mapper.converter.datetime.Timestamp2StringConverter;
 import org.laxture.skr.jooq.mapper.converter.jsr310.*;
-import org.laxture.skr.jooq.mapper.converter.number.Double2BigDecimalConverter;
-import org.laxture.skr.jooq.mapper.converter.number.Long2BigIntegerConverter;
 
 import java.lang.reflect.Type;
 import java.util.Collections;
@@ -23,8 +21,8 @@ public class ConverterRegistry {
 
     public ConverterRegistry() {
         converters.put(new DirectConverter(), null);
-        converters.put(new Double2BigDecimalConverter(), null);
-        converters.put(new Long2BigIntegerConverter(), null);
+        converters.put(new PrimitiveTypeConverter(), null);
+        converters.put(new ArrayConverter(), null);
         converters.put(new Date2StringConverter(), null);
         converters.put(new Time2StringConverter(), null);
         converters.put(new Timestamp2StringConverter(), null);

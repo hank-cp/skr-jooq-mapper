@@ -1,5 +1,7 @@
 package org.laxture.skr.jooq.mapper;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.*;
 import org.jooq.Record;
@@ -7,23 +9,24 @@ import org.laxture.skr.jooq.mapper.annotation.LeftoverCollector;
 import org.laxture.skr.jooq.mapper.converter.ConverterRegistry;
 import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.hook.MappingHook;
+import org.laxture.skr.jooq.mapper.misc.NamingUtils;
 import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 public class SkrRecordMapperProvider implements RecordMapperProvider {
 
     private final ConverterRegistry converterRegistry;
     private final TableFieldCaseType tableFieldCaseType;
+    private final ObjectMapper objectMapper;
 
     public SkrRecordMapperProvider(ConverterRegistry converterRegistry,
-                                   TableFieldCaseType tableFieldCaseType) {
+                                   TableFieldCaseType tableFieldCaseType,
+                                   ObjectMapper objectMapper) {
         this.converterRegistry = converterRegistry;
         this.tableFieldCaseType = tableFieldCaseType;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -53,20 +56,21 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
 
             E modelInstance = RefectionUtils.createInstance(modelType);
             Set<String> processedFields = new HashSet<>();
-            Map<RefectionUtils.FieldTuple, Boolean> nestedObjectFieldTouchFlags = new HashMap<>();
 
             for (Field<?> recordField : record.fields()) {
                 Object jVal = recordField.get(record);
-                String fieldName = convertToCamelCase(recordField.getName());
+                String fieldName = NamingUtils.convertToCamelCase(
+                    tableFieldCaseType, recordField.getName());
 
                 // find model field, convert and set value
                 RefectionUtils.FieldTuple modelField = RefectionUtils.findMatchModelField(modelInstance, fieldName);
                 if (modelField != null) {
+                    processedFields.add(recordField.getName()); // find matched model field, mark as processed, don't collect as leftover
+
                     Object converted = convertFieldValue(jVal, modelField.getField().getGenericType());
                     if (converted == null) continue;
                     RefectionUtils.setFieldValue(
                         modelField.getOwner(), modelField.getField(), converted);
-                    processedFields.add(recordField.getName());
                     modelField.settle();
                 }
             }
@@ -91,58 +95,46 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
             return null;
         }
 
-        return converter.convertToModelType(jVal);
-    }
-
-    private String convertToCamelCase(String fieldName) {
-        if (fieldName == null || fieldName.isEmpty()) return fieldName;
-
-        switch (tableFieldCaseType) {
-            case CAMEL_CASE:
-                return fieldName;
-            case SNAKE_CASE:
-            case SCREAMING_SNAKE_CASE:
-                String[] parts = fieldName.split("_");
-                StringBuilder result = new StringBuilder(parts[0].toLowerCase());
-                for (int i = 1; i < parts.length; i++) {
-                    if (!parts[i].isEmpty()) {
-                        result.append(Character.toUpperCase(parts[i].charAt(0)))
-                              .append(parts[i].substring(1).toLowerCase());
-                    }
-                }
-                return result.toString();
-            case KEBAB_CASE:
-                String[] kebabParts = fieldName.split("-");
-                StringBuilder kebabResult = new StringBuilder(kebabParts[0].toLowerCase());
-                for (int i = 1; i < kebabParts.length; i++) {
-                    if (!kebabParts[i].isEmpty()) {
-                        kebabResult.append(Character.toUpperCase(kebabParts[i].charAt(0)))
-                                   .append(kebabParts[i].substring(1).toLowerCase());
-                    }
-                }
-                return kebabResult.toString();
-            default:
-                return fieldName;
-        }
+        return converter.convertToModelType(jVal, modelType);
     }
 
     private void handleLeftoverCollector(Object instance,
                                          Record record, Set<String> processedFields,
                                          Class<?> modelType) {
-        java.lang.reflect.Field leftoverField = RefectionUtils.findFieldAnnotatedWith(modelType, LeftoverCollector.class);
+        java.lang.reflect.Field leftoverField = RefectionUtils.findFieldAnnotatedWith(
+            modelType, LeftoverCollector.class);
+        if (leftoverField == null || !Map.class.isAssignableFrom(leftoverField.getType())) return;
 
         // collect leftover fields
         Map<String, Object> leftoverMap = new HashMap<>();
         for (Field<?> field : record.fields()) {
             String fieldName = field.getName();
-            if (processedFields.contains(fieldName)) continue;
-            leftoverMap.put(fieldName, field.get(record));
+            if (processedFields.contains(fieldName) || field.get(record) == null) continue;
+            Object converted;
+            if (RefectionUtils.areEquals(JSON.class, field.getType())
+                || RefectionUtils.areEquals(JSONB.class, field.getType())) {
+                String jsonStr = field.get(record).toString();
+                try {
+                    if (jsonStr.startsWith("{")) {
+                        converted = objectMapper.readValue(jsonStr, Map.class);
+                    } else if (jsonStr.startsWith("[")) {
+                        converted = objectMapper.readValue(jsonStr, List.class);
+                    } else {
+                        converted = jsonStr;
+                    }
+                } catch (JsonProcessingException e) {
+                    log.warn("Failed to read JSON string {} to Map or List", jsonStr, e);
+                    converted = jsonStr;
+                }
+            } else {
+                converted = field.get(record);
+            }
+            if (converted != null) leftoverMap.put(
+                NamingUtils.convertToCamelCase(tableFieldCaseType, fieldName), converted);
         }
 
+        if (leftoverMap.isEmpty()) return;
         // set leftover field to the model instance
-        if (leftoverMap.isEmpty()
-            || leftoverField == null
-            || !Map.class.isAssignableFrom(leftoverField.getType())) return;
         RefectionUtils.setFieldValue(instance, leftoverField, leftoverMap);
     }
 }

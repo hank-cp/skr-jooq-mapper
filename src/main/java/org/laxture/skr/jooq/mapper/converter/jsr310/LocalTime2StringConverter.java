@@ -4,6 +4,7 @@ import lombok.NonNull;
 import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.misc.MapperConversionException;
 
+import java.lang.reflect.Type;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -23,12 +24,12 @@ public class LocalTime2StringConverter implements SkrJooqConverter<LocalTime, St
     }
 
     @Override
-    public String convertToJooqType(@NonNull LocalTime mVal) {
+    public String convertToJooqType(@NonNull LocalTime mVal, Class<?> jooqType) {
         return formatter.format(mVal);
     }
 
     @Override
-    public LocalTime convertToModelType(@NonNull String jVal) {
+    public LocalTime convertToModelType(@NonNull String jVal, Type modelType) {
         try {
             return LocalTime.parse(jVal, formatter);
         } catch (DateTimeParseException e) {

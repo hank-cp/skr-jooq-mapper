@@ -102,6 +102,33 @@ public final class RefectionUtils {
         return Number.class.isAssignableFrom(wrap(RefectionUtils.toClass(target)));
     }
 
+    public static Object[] wrapArray(Object array) {
+        if (array == null) return null;
+        if (!array.getClass().isArray()) {
+            throw  new IllegalArgumentException("Cannot wrap array of type " + array.getClass());
+        }
+        if (isPrimitive(RefectionUtils.getComponentTypeOfListOrArray(array.getClass()))) {
+            if (array instanceof int[]) {
+                return ArrayUtils.toObject((int[]) array);
+            } else if (array instanceof long[]) {
+                return ArrayUtils.toObject((long[]) array);
+            } else if (array instanceof float[]) {
+                return ArrayUtils.toObject((float[]) array);
+            } else if (array instanceof double[]) {
+                return ArrayUtils.toObject((double[]) array);
+            } else if (array instanceof boolean[]) {
+                return ArrayUtils.toObject((boolean[]) array);
+            } else if (array instanceof char[]) {
+                return ArrayUtils.toObject((char[]) array);
+            } else if (array instanceof short[]) {
+                return ArrayUtils.toObject((short[]) array);
+            } else if (array instanceof byte[]) {
+                return ArrayUtils.toObject((byte[]) array);
+            }
+        }
+        return (Object[]) array;
+    }
+
     private final static Map<Class<?>, Class<?>> wrappers = new HashMap<Class<?>, Class<?>>();
     static {
         wrappers.put(boolean.class, Boolean.class);
@@ -388,14 +415,14 @@ public final class RefectionUtils {
     }
 
     public static RefectionUtils.FieldTuple findMatchModelField(Object modelInstance, String fieldName) {
-        return findMatchModelField(modelInstance, fieldName, new ArrayList<Runnable>());
+        return findMatchModelField(modelInstance, fieldName, new ArrayList<>());
     }
 
     private static RefectionUtils.FieldTuple findMatchModelField(Object modelInstance, String fieldName,
-                                                                 List<Runnable> settleCallback) {
+                                                                 List<NestedObjectStub> context) {
         java.lang.reflect.Field field = RefectionUtils.findField(modelInstance.getClass(), fieldName);
         if (field != null) {
-            return new RefectionUtils.FieldTuple(field, modelInstance, settleCallback);
+            return new RefectionUtils.FieldTuple(field, modelInstance, context);
         }
 
         String[] nameParts = StringUtils.splitByCharacterTypeCamelCase(fieldName);
@@ -406,17 +433,20 @@ public final class RefectionUtils {
             if (field != null && !RefectionUtils.isPrimitive(field.getType())) {
                 Object nestedObject = getFieldValue(modelInstance, field);
                 if (nestedObject == null) {
+                    Field finalField1 = field;
+                    nestedObject = context.stream().filter(stub -> {
+                        return stub.owner == modelInstance && stub.field == finalField1;
+                    }).findAny().map(NestedObjectStub::nestedObject).orElse(null);
+                }
+                if (nestedObject == null) {
                     nestedObject = createInstance(field.getType());
                     Object finalNestedObject = nestedObject;
-                    Field finalField = field;
-                    settleCallback.add(() -> {
-                        setFieldValue(modelInstance, finalField, finalNestedObject);
-                    });
+                    context.add(new NestedObjectStub(modelInstance, field, finalNestedObject));
                 }
 
                 return findMatchModelField(nestedObject,
                     StringUtils.uncapitalize(fieldName.replaceFirst(
-                        "^" + possibleNestedField, "")), settleCallback);
+                        "^" + possibleNestedField, "")), context);
             }
             possibleNestedField.append(StringUtils.capitalize(nameParts[++partIndex]));
         }
@@ -424,18 +454,24 @@ public final class RefectionUtils {
         return null;
     }
 
+    private record NestedObjectStub(
+        Object owner,
+        Field field,
+        Object nestedObject
+    ) {}
+
     public static class FieldTuple {
         @Getter
         private final Field field;
         @Getter
         private final Object owner;
-        private final List<Runnable> settleCallbacks;
+        private final List<NestedObjectStub> context;
 
-        public FieldTuple(@NonNull Field field, @NonNull Object owner,
-                          @NonNull List<Runnable> settleCallbacks) {
+        private FieldTuple(@NonNull Field field, @NonNull Object owner,
+                          @NonNull List<NestedObjectStub> context) {
             this.field = field;
             this.owner = owner;
-            this.settleCallbacks = settleCallbacks;
+            this.context = context;
         }
 
         @Override
@@ -449,7 +485,9 @@ public final class RefectionUtils {
         }
 
         public void settle() {
-            settleCallbacks.forEach(Runnable::run);
+            context.forEach(stub -> {
+                setFieldValue(stub.owner, stub.field, stub.nestedObject);
+            });
         }
     }
 

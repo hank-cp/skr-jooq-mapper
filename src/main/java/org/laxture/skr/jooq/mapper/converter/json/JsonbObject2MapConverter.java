@@ -9,19 +9,19 @@ import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.misc.MapperConversionException;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Map;
 
 public class JsonbObject2MapConverter implements SkrJooqConverter<Map<String, Object>, JSONB> {
 
     protected final ObjectMapper objectMapper;
 
-    @SuppressWarnings("unchecked")
     public JsonbObject2MapConverter(@NonNull ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
     @Override
-    public JSONB convertToJooqType(@NonNull Map<String, Object> mVal) {
+    public JSONB convertToJooqType(@NonNull Map<String, Object> mVal, Class<?> jooqType) {
         try {
             return JSONB.valueOf(objectMapper.writeValueAsString(mVal));
         } catch (IOException e) {
@@ -30,7 +30,7 @@ public class JsonbObject2MapConverter implements SkrJooqConverter<Map<String, Ob
     }
 
     @Override
-    public Map<String, Object> convertToModelType(@NonNull JSONB jVal) {
+    public Map<String, Object> convertToModelType(@NonNull JSONB jVal, Type modelType) {
         if ("null".equals(jVal.toString())) return null;
         try {
             MapType mapType = objectMapper.getSerializationConfig()

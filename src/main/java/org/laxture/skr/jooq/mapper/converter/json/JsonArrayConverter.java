@@ -10,35 +10,28 @@ import org.laxture.skr.jooq.mapper.misc.MapperConversionException;
 import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
 
 import java.io.IOException;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 
-public class JsonArrayConverter<ModelType> implements SkrJooqConverter<List<ModelType>, JSON> {
+public class JsonArrayConverter implements SkrJooqConverter<List<?>, JSON> {
 
     private final ObjectMapper objectMapper;
-    private final Class<ModelType> _modelType;
 
-    @SuppressWarnings("unchecked")
-    public JsonArrayConverter(@NonNull ObjectMapper objectMapper,
-                              @NonNull Class<ModelType> modelType) {
+    public JsonArrayConverter(@NonNull ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this._modelType = modelType;
     }
 
     @Override
     public int match(@NonNull Type modelType, @NonNull Type jooqType) {
-        if (modelType instanceof ParameterizedType
-            && RefectionUtils.isAssignable(List.class, ((ParameterizedType) modelType).getRawType())
-            && RefectionUtils.areEquals(RefectionUtils.getComponentTypeOfListOrArray(modelType), _modelType)
+        if (RefectionUtils.isAssignable(List.class, modelType)
             && RefectionUtils.isAssignable(JSON.class, jooqType)) {
-            return 11;
+            return 12;
         }
         return MISMATCH;
     }
 
     @Override
-    public JSON convertToJooqType(List<ModelType> mVal) {
+    public JSON convertToJooqType(List<?> mVal, Class<?> jooqType) {
         try {
             return JSON.valueOf(objectMapper.writeValueAsString(mVal));
         } catch (IOException e) {
@@ -47,11 +40,16 @@ public class JsonArrayConverter<ModelType> implements SkrJooqConverter<List<Mode
     }
 
     @Override
-    public List<ModelType> convertToModelType(JSON jVal) {
+    public List<?> convertToModelType(JSON jVal, Type modelType) {
         if ("null".equals(jVal.toString())) return null;
 
+        Type elementType = RefectionUtils.getComponentTypeOfListOrArray(modelType);
+        if (elementType == null) {
+            throw new MapperConversionException(getJooqType(), getModelType());
+        }
+        Class<?> elementClass = RefectionUtils.toClass(elementType);
         CollectionType collectionType = objectMapper.getSerializationConfig()
-            .getTypeFactory().constructCollectionType(List.class, _modelType);
+            .getTypeFactory().constructCollectionType(List.class, elementClass);
         try {
             return objectMapper.readValue(jVal.data(), collectionType);
         } catch (IllegalArgumentException | JsonProcessingException e) {

@@ -14,13 +14,13 @@ import org.laxture.skr.jooq.mapper.converter.json.JsonArrayConverter;
 import org.laxture.skr.jooq.mapper.converter.json.JsonObject2MapConverter;
 import org.laxture.skr.jooq.mapper.converter.json.JsonObjectConverter;
 import org.laxture.skr.jooq.mapper.misc.ObjectMapperConfigurer;
-import org.laxture.skr.jooq.test.model.EducationExperience;
 import org.laxture.skr.jooq.test.model.User;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -36,8 +36,8 @@ class SkrRecordMapperTest {
         objectMapper = ObjectMapperConfigurer.setupPersistentObjectMapper(new ObjectMapper());
 
         ConverterRegistry converterRegistry = new ConverterRegistry();
-        converterRegistry.registerConverter(new JsonObjectConverter<>(objectMapper, EducationExperience.class), null);
-        converterRegistry.registerConverter(new JsonArrayConverter<>(objectMapper, EducationExperience.class), null);
+        converterRegistry.registerConverter(new JsonObjectConverter(objectMapper), null);
+        converterRegistry.registerConverter(new JsonArrayConverter(objectMapper), null);
         converterRegistry.registerConverter(new JsonObject2MapConverter(objectMapper), null);
 
         connection = DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "");
@@ -45,7 +45,8 @@ class SkrRecordMapperTest {
         Configuration configuration = new org.jooq.impl.DefaultConfiguration();
         configuration.set(SQLDialect.H2);
         configuration.set(connection);
-        configuration.set(new SkrRecordMapperProvider(converterRegistry, TableFieldCaseType.SCREAMING_SNAKE_CASE));
+        configuration.set(new SkrRecordMapperProvider(converterRegistry,
+            TableFieldCaseType.SCREAMING_SNAKE_CASE, objectMapper));
 
         dsl = DSL.using(configuration);
 
@@ -64,10 +65,11 @@ class SkrRecordMapperTest {
                 user_profile_avatar_url VARCHAR(100),
                 edu_experiences JSON,
                 recent_edu_experience JSON,
-                meta_info JSON,
+                meta_info JSON,  -- leftover field
                 friend_ids BIGINT ARRAY,
-                note VARCHAR(200),
-                misc_info JSON);
+                note VARCHAR(200), -- leftover field
+                misc_info JSON -- leftover field
+            );
             """);
 
         dsl.execute("""
@@ -81,12 +83,12 @@ class SkrRecordMapperTest {
                     'https://avatar.com/hank.jpg', 
                     JSON '[{"institute":"MIT","major":"CS"},{"institute":"MIT","major":"Math"}]', 
                     JSON '{"institute":"MIT","major":"CS"}', 
-                    JSON '{"habit":"reading", "married":true}', ARRAY[1,2,3], 'note', '{}');
-        """);
+                    JSON '{"habit":"reading", "married":true}', ARRAY[1,2,3], 'note', JSON '{"a":"b"}');
+            """);
     }
 
     @Test
-    void testBasicMapping() {
+    void testMapping() {
         org.jooq.Record record = dsl.resultQuery("SELECT * FROM users WHERE name = 'Skr'").fetchOne();
 
         User user = record.into(User.class);
@@ -94,64 +96,38 @@ class SkrRecordMapperTest {
         assertThat(user, notNullValue());
         assertThat(user.getName(), is("Skr"));
         assertThat(user.getAge(), is(30));
-        assertThat(user.getCreatedAt(), is(LocalDateTime.parse("2023-01-01 12:00:00")));
+        assertThat(user.getCreatedAt(), is(LocalDateTime.parse("2023-01-01T12:00:00")));
         assertThat(user.getBirthDate(), is(LocalDate.parse("2000-01-01")));
+        assertThat(user.getAddress(), notNullValue());
+        assertThat(user.getAddress().getLine1(), is("123 Main St"));
+        assertThat(user.getAddress().getLine2(), is("Apt 4B"));
+        assertThat(user.getAddress().getCity(), is("New York"));
+        assertThat(user.getUserProfile(), notNullValue());
+        assertThat(user.getUserProfile().getAvatarUrl(), is("https://avatar.com/hank.jpg"));
+        assertThat(user.getEduExperiences(), notNullValue());
+        assertThat(user.getEduExperiences().size(), is(2));
+        assertThat(user.getEduExperiences().get(0).institute, is("MIT"));
+        assertThat(user.getEduExperiences().get(0).major, is("CS"));
+        assertThat(user.getEduExperiences().get(1).institute, is("MIT"));
+        assertThat(user.getEduExperiences().get(1).major, is("Math"));
+        assertThat(user.getRecentEduExperience(), notNullValue());
+        assertThat(user.getRecentEduExperience().institute, is("MIT"));
+        assertThat(user.getRecentEduExperience().major, is("CS"));
+        assertThat(user.getMetaInfo(), notNullValue());
+        assertThat(user.getMetaInfo().get("habit"), is("reading"));
+        assertThat(user.getMetaInfo().get("married"), is(true));
+        assertThat(user.getFriendIds(), notNullValue());
+        assertThat(user.getFriendIds().size(), is(3));
+        assertThat(user.getFriendIds().get(0), is(1L));
+        assertThat(user.getFriendIds().get(1), is(2L));
+        assertThat(user.getFriendIds().get(2), is(3L));
+        assertThat(user.getExtras(), notNullValue());
+        assertThat(user.getExtras(), aMapWithSize(2));
+
+        // verify leftover fields
+        assertThat(user.getExtras().get("note"), is("note"));
+        Map<String, Object> miscInfo = (Map<String, Object>) user.getExtras().get("miscInfo");
+        assertThat(miscInfo, notNullValue());
+        assertThat(miscInfo.get("a"), is("b"));
     }
-//
-//    @Test
-//    void testCascadeMapping() {
-//        org.jooq.Record record = dsl.resultQuery(
-//                "SELECT name, age, address_line1, address_line2, address_city FROM users WHERE name = 'Hank'"
-//        ).fetchOne();
-//
-//        User user = record.into(User.class);
-//
-//        assertNotNull(user);
-//        assertEquals("Hank", user.getName());
-//        assertEquals(30, user.getAge());
-//        assertNotNull(user.getAddress());
-//        assertEquals("123 Main St", user.getAddress().getLine1());
-//        assertEquals("Apt 4B", user.getAddress().getLine2());
-//        assertEquals("New York", user.getAddress().getCity());
-//    }
-//
-//    @Test
-//    void testLeftoverCollector() {
-//        org.jooq.Record record = dsl.resultQuery(
-//                "SELECT name, age, extra_field FROM users WHERE name = 'Hank'"
-//        ).fetchOne();
-//
-//        User user = record.into(User.class);
-//
-//        assertNotNull(user);
-//        assertNotNull(user.getExtras());
-//        assertTrue(user.getExtras().containsKey("extra_field"));
-//        assertEquals("extra_value", user.getExtras().get("extra_field"));
-//    }
-//
-//    @Test
-//    void testPostMappingHook() {
-//        org.jooq.Record record = dsl.resultQuery("SELECT name, age FROM users WHERE name = 'Hank'").fetchOne();
-//
-//        User user = record.into(User.class);
-//
-//        assertNotNull(user);
-//        assertTrue(user.isPostMappingCalled());
-//    }
-//
-//    @Test
-//    void testPrimaryKeyNullHandling() {
-//        dsl.execute("INSERT INTO users (name, age) VALUES ('John', 25)");
-//
-//        org.jooq.Record record = dsl.resultQuery(
-//                "SELECT name, age, address_line1, address_line2, address_city FROM users WHERE name = 'John'"
-//        ).fetchOne();
-//
-//        User user = record.into(User.class);
-//
-//        assertNotNull(user);
-//        assertEquals("John", user.getName());
-//        assertEquals(25, user.getAge());
-//        assertNull(user.getAddress());
-//    }
 }

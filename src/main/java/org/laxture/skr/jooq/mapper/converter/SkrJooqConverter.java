@@ -33,7 +33,7 @@ public interface SkrJooqConverter<ModelType, JooqType> {
         return MISMATCH;
     }
 
-    JooqType convertToJooqType(@NonNull ModelType mVal);
+    JooqType convertToJooqType(@NonNull ModelType mVal, Class<?> jooqType);
 
-    ModelType convertToModelType(@NonNull JooqType jVal);
+    ModelType convertToModelType(@NonNull JooqType jVal, Type modelType);
 }
