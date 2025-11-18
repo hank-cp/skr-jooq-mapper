@@ -23,7 +23,12 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:${jackson_version}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jackson_version}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jackson_version}"
-    implementation "org.springframework.data:spring-data-commons:3.5.1"
+    implementation "org.springframework.data:spring-data-commons:${spring_boot_version}"
+
+    // Spring Boot AutoConfiguration support (optional)
+    compileOnly "org.springframework.boot:spring-boot-autoconfigure:${spring_boot_version}"
+    compileOnly "org.springframework.boot:spring-boot-configuration-processor:${spring_boot_version}"
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:${spring_boot_version}"
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'

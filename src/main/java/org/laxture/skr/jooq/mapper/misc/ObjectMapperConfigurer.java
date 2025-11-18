@@ -15,20 +15,11 @@
  */
 package org.laxture.skr.jooq.mapper.misc;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
-import org.laxture.skr.jooq.mapper.annotation.JsonTransient;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import org.apache.commons.lang3.ArrayUtils;
 
 /**
  * Utility class for objectmapper operations.
@@ -36,6 +27,15 @@ import java.time.format.DateTimeFormatter;
  * @author <a href="https://github.com/hank-cp">Hank CP</a>
  */
 public class ObjectMapperConfigurer {
+
+    private static final String[] IGNORE_ANNOTATION_NAMES = new String[]{
+        org.laxture.skr.jooq.mapper.annotation.JsonTransient.class.getName(),
+        com.fasterxml.jackson.annotation.JsonIgnore.class.getName(),
+        java.beans.Transient.class.getName(),
+        org.springframework.data.annotation.Transient.class.getName(),
+        "jakarta.persistence.Transient",
+        "javax.persistence.Transient"
+    };
 
     /**
      * Sets the uppersistentobjectmapper.
@@ -48,11 +48,10 @@ public class ObjectMapperConfigurer {
             .setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
                 @Override
                 public boolean hasIgnoreMarker(AnnotatedMember m) {
-                    return _hasOneOf(m, new Class[]{
-                        JsonTransient.class, JsonIgnore.class,
-                        java.beans.Transient.class,
-//                        jakarta.persistence.Transient.class,
-                        org.springframework.data.annotation.Transient.class});
+                    for (java.lang.annotation.Annotation annotation : m.getAllAnnotations().annotations()) {
+                        if (ArrayUtils.contains(IGNORE_ANNOTATION_NAMES, annotation.annotationType().getName())) return true;
+                    }
+                    return false;
                 }
             });
     }
