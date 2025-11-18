@@ -63,7 +63,7 @@ public class User {
 |-------------------------|---------------------|----------------|------------------|-----------------------|
 | Custom Type Conversion  | ❌ Limited           | ✅ Compile-time | ✅ Compile-time   | ✅ Runtime dynamic     |
 | JSON/JSONB Support      | ❌ Basic             | ❌ None         | ❌ None           | ✅ Excellent (Jackson) |
-| Nested Object Mapping   | ❌ None              | ✅ Join-based   | ✅ Support        | ✅ Support             |
+| Nested Object Mapping   | ❌ None              | ✅ Support      | ✅ Support        | ✅ Support             |
 | Runtime Extensibility   | ❌ None              | ❌ None         | ❌ None           | ✅ Full support        |
 | Performance             | ⚡ Fast              | ⚡ Fast         | ⚡ Fast           | ⚡ Fast (cached)       |
 | Spring Boot Integration | ❌ Manual            | ❌ Manual       | ❌ Manual         | ✅ Auto-configuration  |
