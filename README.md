@@ -1,5 +1,5 @@
 [![GitHub release](https://img.shields.io/github/release/hank-cp/skr-jooq-mapper.svg)](https://github.com/hank-cp/skr-jooq-mapper/releases)
-![Maven Central](https://img.shields.io/maven-central/v/org.laxture.skr-jooq-mapper/skr-jooq-mapper.svg)
+![Maven Central](https://img.shields.io/maven-central/v/org.laxture/skr-jooq-mapper.svg)
 ![Test](https://github.com/hank-cp/skr-jooq-mapper/workflows/CI%20Test/badge.svg)
 ![GitHub](https://img.shields.io/github/license/hank-cp/skr-jooq-mapper)
 ![GitHub last commit](https://img.shields.io/github/last-commit/hank-cp/skr-jooq-mapper.svg)
@@ -216,7 +216,7 @@ Fine-grained control over mapping behavior:
 #### Maven
 ```xml
 <dependency>
-    <groupId>org.laxture.skr-jooq-mapper</groupId>
+    <groupId>org.laxture</groupId>
     <artifactId>skr-jooq-mapper</artifactId>
     <version>0.0.1</version>
 </dependency>
@@ -224,7 +224,7 @@ Fine-grained control over mapping behavior:
 
 #### Gradle
 ```gradle
-implementation 'org.laxture.skr-jooq-mapper:skr-jooq-mapper:0.0.1'
+implementation 'org.laxture:skr-jooq-mapper:0.0.1'
 ```
 
 ### Pure Java Environment
