@@ -29,12 +29,12 @@ import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
 
 import java.util.*;
 
-@Slf4j
 /**
  * Provider for SkrRecordMapper instances.
  *
  * @author <a href="https://github.com/hank-cp">Hank CP</a>
  */
+@Slf4j
 public class SkrRecordMapperProvider implements RecordMapperProvider {
 
     private final ConverterRegistry converterRegistry;

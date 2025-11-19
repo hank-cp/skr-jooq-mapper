@@ -20,7 +20,7 @@ repositories {
     mavenCentral()
 }
 
-group = 'org.laxture.skr-jooq-mapper'
+group = 'org.laxture'
 version = "${version}"
 
 dependencies {
