@@ -103,6 +103,26 @@ class NamingUtilsTest {
     }
 
     @Test
+    void testConvertFromCamelCase_ToPascalCase() {
+        assertThat(NamingUtils.convertFromCamelCase(TableFieldCaseType.PASCAL_CASE, "userName"),
+            equalTo("UserName"));
+        assertThat(NamingUtils.convertFromCamelCase(TableFieldCaseType.PASCAL_CASE, "firstName"),
+            equalTo("FirstName"));
+        assertThat(NamingUtils.convertFromCamelCase(TableFieldCaseType.PASCAL_CASE, "id"),
+            equalTo("Id"));
+    }
+
+    @Test
+    void testConvertToCamelCase_FromPascalCase() {
+        assertThat(NamingUtils.convertToCamelCase(TableFieldCaseType.PASCAL_CASE, "UserName"),
+            equalTo("userName"));
+        assertThat(NamingUtils.convertToCamelCase(TableFieldCaseType.PASCAL_CASE, "FirstName"),
+            equalTo("firstName"));
+        assertThat(NamingUtils.convertToCamelCase(TableFieldCaseType.PASCAL_CASE, "Id"),
+            equalTo("id"));
+    }
+
+    @Test
     void testConvertFromCamelCase_WithAcronyms() {
         // Test consecutive uppercase letters (acronyms)
         assertThat(NamingUtils.convertFromCamelCase(TableFieldCaseType.SNAKE_CASE, "XMLParser"),
@@ -183,5 +203,38 @@ class NamingUtilsTest {
         assertThat(snakeCase, equalTo("xml_parser"));
         String backToCamel = NamingUtils.convertToCamelCase(TableFieldCaseType.SNAKE_CASE, snakeCase);
         assertThat(backToCamel, equalTo("xmlParser")); // lowercase 'xml' instead of 'XML'
+    }
+
+    @Test
+    void testRoundTrip_PascalCase() {
+        String original = "userName";
+        String pascalCase = NamingUtils.convertFromCamelCase(TableFieldCaseType.PASCAL_CASE, original);
+        String backToCamel = NamingUtils.convertToCamelCase(TableFieldCaseType.PASCAL_CASE, pascalCase);
+        assertThat(backToCamel, equalTo(original));
+
+        original = "firstName";
+        pascalCase = NamingUtils.convertFromCamelCase(TableFieldCaseType.PASCAL_CASE, original);
+        backToCamel = NamingUtils.convertToCamelCase(TableFieldCaseType.PASCAL_CASE, pascalCase);
+        assertThat(backToCamel, equalTo(original));
+    }
+
+    @Test
+    void testConvertToPascalCase() {
+        assertThat(NamingUtils.convertToPascalCase("userName"), equalTo("UserName"));
+        assertThat(NamingUtils.convertToPascalCase("firstName"), equalTo("FirstName"));
+        assertThat(NamingUtils.convertToPascalCase("id"), equalTo("Id"));
+        assertThat(NamingUtils.convertToPascalCase("UserName"), equalTo("UserName"));
+        assertThat(NamingUtils.convertToPascalCase(null), nullValue());
+        assertThat(NamingUtils.convertToPascalCase(""), equalTo(""));
+    }
+
+    @Test
+    void testConvertFromPascalCase() {
+        assertThat(NamingUtils.convertFromPascalCase("UserName"), equalTo("userName"));
+        assertThat(NamingUtils.convertFromPascalCase("FirstName"), equalTo("firstName"));
+        assertThat(NamingUtils.convertFromPascalCase("Id"), equalTo("id"));
+        assertThat(NamingUtils.convertFromPascalCase("userName"), equalTo("userName"));
+        assertThat(NamingUtils.convertFromPascalCase(null), nullValue());
+        assertThat(NamingUtils.convertFromPascalCase(""), equalTo(""));
     }
 }

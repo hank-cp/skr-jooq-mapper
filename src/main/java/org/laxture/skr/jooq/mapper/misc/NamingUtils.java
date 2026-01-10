@@ -38,6 +38,8 @@ public class NamingUtils {
         switch (tableFieldCaseType) {
             case CAMEL_CASE:
                 return fieldName;
+            case PASCAL_CASE:
+                return convertToPascalCase(fieldName);
             case SNAKE_CASE:
                 return camelToDelimitedCase(fieldName, '_', false);
             case SCREAMING_SNAKE_CASE:
@@ -47,6 +49,28 @@ public class NamingUtils {
             default:
                 return fieldName;
         }
+    }
+
+    /**
+     * Converts a camelCase or PascalCase field name to PascalCase.
+     *
+     * @param fieldName the camelCase or PascalCase field name
+     * @return the converted field name in PascalCase
+     */
+    public static String convertToPascalCase(String fieldName) {
+        if (fieldName == null || fieldName.isEmpty()) return fieldName;
+        return Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
+    }
+
+    /**
+     * Converts a PascalCase field name to camelCase.
+     *
+     * @param fieldName the PascalCase field name
+     * @return the converted field name in camelCase
+     */
+    public static String convertFromPascalCase(String fieldName) {
+        if (fieldName == null || fieldName.isEmpty()) return fieldName;
+        return Character.toLowerCase(fieldName.charAt(0)) + fieldName.substring(1);
     }
 
     /**
@@ -61,10 +85,10 @@ public class NamingUtils {
         if (camelCase == null || camelCase.isEmpty()) return camelCase;
 
         StringBuilder result = new StringBuilder(camelCase.length() + 5);
-        
+
         for (int i = 0; i < camelCase.length(); i++) {
             char ch = camelCase.charAt(i);
-            
+
             if (Character.isUpperCase(ch)) {
                 // Add delimiter before uppercase letter (except at the beginning)
                 if (i > 0 && shouldAddDelimiter(camelCase, i)) {
@@ -75,7 +99,7 @@ public class NamingUtils {
                 result.append(uppercase ? Character.toUpperCase(ch) : ch);
             }
         }
-        
+
         return result.toString();
     }
 
@@ -92,13 +116,13 @@ public class NamingUtils {
         if (Character.isLowerCase(str.charAt(index - 1))) {
             return true;
         }
-        
+
         // For consecutive uppercase letters, add delimiter before the last one
         // if it's followed by a lowercase letter (e.g., "XMLParser" -> "XML_Parser")
         if (index + 1 < str.length() && Character.isLowerCase(str.charAt(index + 1))) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -116,6 +140,8 @@ public class NamingUtils {
         switch (tableFieldCaseType) {
             case CAMEL_CASE:
                 return fieldName;
+            case PASCAL_CASE:
+                return convertFromPascalCase(fieldName);
             case SNAKE_CASE:
             case SCREAMING_SNAKE_CASE:
                 String[] parts = fieldName.split("_");

@@ -23,6 +23,7 @@ package org.laxture.skr.jooq.mapper;
 public enum TableFieldCaseType {
 
     CAMEL_CASE("camelCase"),
+    PASCAL_CASE("PascalCase"),
     SCREAMING_SNAKE_CASE("SCREAMING_SNAKE_CASE"),
     SNAKE_CASE("snake_case"),
     KEBAB_CASE("kebab-case");
