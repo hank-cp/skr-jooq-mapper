@@ -123,6 +123,34 @@ class NamingUtilsTest {
     }
 
     @Test
+    void testConvertFromPascalCase() {
+        assertThat(NamingUtils.convertFromPascalCase(TableFieldCaseType.CAMEL_CASE, "UserName"),
+            equalTo("userName"));
+        assertThat(NamingUtils.convertFromPascalCase(TableFieldCaseType.CAMEL_CASE, "FirstName"),
+            equalTo("firstName"));
+        assertThat(NamingUtils.convertFromPascalCase(TableFieldCaseType.CAMEL_CASE, "Id"),
+            equalTo("id"));
+        assertThat(NamingUtils.convertFromPascalCase(TableFieldCaseType.SNAKE_CASE, "UserName"),
+            equalTo("user_name"));
+        assertThat(NamingUtils.convertFromPascalCase(TableFieldCaseType.KEBAB_CASE, "FirstName"),
+            equalTo("first-name"));
+    }
+
+    @Test
+    void testConvertToPascalCase() {
+        assertThat(NamingUtils.convertToPascalCase(TableFieldCaseType.CAMEL_CASE, "userName"),
+            equalTo("UserName"));
+        assertThat(NamingUtils.convertToPascalCase(TableFieldCaseType.CAMEL_CASE, "firstName"),
+            equalTo("FirstName"));
+        assertThat(NamingUtils.convertToPascalCase(TableFieldCaseType.CAMEL_CASE, "id"),
+            equalTo("Id"));
+        assertThat(NamingUtils.convertToPascalCase(TableFieldCaseType.SNAKE_CASE, "user_name"),
+            equalTo("UserName"));
+        assertThat(NamingUtils.convertToPascalCase(TableFieldCaseType.KEBAB_CASE, "first-name"),
+            equalTo("FirstName"));
+    }
+
+    @Test
     void testConvertFromCamelCase_WithAcronyms() {
         // Test consecutive uppercase letters (acronyms)
         assertThat(NamingUtils.convertFromCamelCase(TableFieldCaseType.SNAKE_CASE, "XMLParser"),
@@ -216,25 +244,5 @@ class NamingUtilsTest {
         pascalCase = NamingUtils.convertFromCamelCase(TableFieldCaseType.PASCAL_CASE, original);
         backToCamel = NamingUtils.convertToCamelCase(TableFieldCaseType.PASCAL_CASE, pascalCase);
         assertThat(backToCamel, equalTo(original));
-    }
-
-    @Test
-    void testConvertToPascalCase() {
-        assertThat(NamingUtils.convertToPascalCase("userName"), equalTo("UserName"));
-        assertThat(NamingUtils.convertToPascalCase("firstName"), equalTo("FirstName"));
-        assertThat(NamingUtils.convertToPascalCase("id"), equalTo("Id"));
-        assertThat(NamingUtils.convertToPascalCase("UserName"), equalTo("UserName"));
-        assertThat(NamingUtils.convertToPascalCase(null), nullValue());
-        assertThat(NamingUtils.convertToPascalCase(""), equalTo(""));
-    }
-
-    @Test
-    void testConvertFromPascalCase() {
-        assertThat(NamingUtils.convertFromPascalCase("UserName"), equalTo("userName"));
-        assertThat(NamingUtils.convertFromPascalCase("FirstName"), equalTo("firstName"));
-        assertThat(NamingUtils.convertFromPascalCase("Id"), equalTo("id"));
-        assertThat(NamingUtils.convertFromPascalCase("userName"), equalTo("userName"));
-        assertThat(NamingUtils.convertFromPascalCase(null), nullValue());
-        assertThat(NamingUtils.convertFromPascalCase(""), equalTo(""));
     }
 }

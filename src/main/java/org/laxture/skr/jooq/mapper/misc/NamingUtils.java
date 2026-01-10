@@ -15,6 +15,7 @@
  */
 package org.laxture.skr.jooq.mapper.misc;
 
+import org.apache.commons.lang3.StringUtils;
 import org.laxture.skr.jooq.mapper.TableFieldCaseType;
 
 /**
@@ -28,49 +29,38 @@ public class NamingUtils {
      * Converts a camelCase field name to the target case type.
      *
      * @param tableFieldCaseType the target case type
-     * @param fieldName the camelCase field name
+     * @param name the camelCase field name
      * @return the converted field name
      */
     public static String convertFromCamelCase(TableFieldCaseType tableFieldCaseType,
-                                              String fieldName) {
-        if (fieldName == null || fieldName.isEmpty()) return fieldName;
+                                              String name) {
+        if (name == null || name.isEmpty()) return name;
 
         switch (tableFieldCaseType) {
             case CAMEL_CASE:
-                return fieldName;
+                return name;
             case PASCAL_CASE:
-                return convertToPascalCase(fieldName);
+                return StringUtils.capitalize(name);
             case SNAKE_CASE:
-                return camelToDelimitedCase(fieldName, '_', false);
+                return camelToDelimitedCase(name, '_', false);
             case SCREAMING_SNAKE_CASE:
-                return camelToDelimitedCase(fieldName, '_', true);
+                return camelToDelimitedCase(name, '_', true);
             case KEBAB_CASE:
-                return camelToDelimitedCase(fieldName, '-', false);
+                return camelToDelimitedCase(name, '-', false);
             default:
-                return fieldName;
+                return name;
         }
-    }
-
-    /**
-     * Converts a camelCase or PascalCase field name to PascalCase.
-     *
-     * @param fieldName the camelCase or PascalCase field name
-     * @return the converted field name in PascalCase
-     */
-    public static String convertToPascalCase(String fieldName) {
-        if (fieldName == null || fieldName.isEmpty()) return fieldName;
-        return Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
     }
 
     /**
      * Converts a PascalCase field name to camelCase.
      *
-     * @param fieldName the PascalCase field name
+     * @param name the PascalCase field name
      * @return the converted field name in camelCase
      */
-    public static String convertFromPascalCase(String fieldName) {
-        if (fieldName == null || fieldName.isEmpty()) return fieldName;
-        return Character.toLowerCase(fieldName.charAt(0)) + fieldName.substring(1);
+    public static String convertFromPascalCase(TableFieldCaseType tableFieldCaseType,
+                                               String name) {
+        return convertFromCamelCase(tableFieldCaseType, StringUtils.uncapitalize(name));
     }
 
     /**
@@ -141,7 +131,7 @@ public class NamingUtils {
             case CAMEL_CASE:
                 return fieldName;
             case PASCAL_CASE:
-                return convertFromPascalCase(fieldName);
+                return StringUtils.uncapitalize(fieldName);
             case SNAKE_CASE:
             case SCREAMING_SNAKE_CASE:
                 String[] parts = fieldName.split("_");
@@ -170,5 +160,16 @@ public class NamingUtils {
             default:
                 return fieldName;
         }
+    }
+
+    /**
+     * Converts a camelCase or PascalCase field name to PascalCase.
+     *
+     * @param fieldName the camelCase or PascalCase field name
+     * @return the converted field name in PascalCase
+     */
+    public static String convertToPascalCase(TableFieldCaseType tableFieldCaseType,
+                                             String fieldName) {
+        return StringUtils.capitalize(convertToCamelCase(tableFieldCaseType, fieldName));
     }
 }
