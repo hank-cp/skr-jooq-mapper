@@ -213,18 +213,20 @@ Fine-grained control over mapping behavior:
 
 ### Installation
 
+[![Maven Central](https://img.shields.io/maven-central/v/org.laxture/skr-jooq-mapper.svg?label=Latest%20Release)](https://central.sonatype.com/artifact/org.laxture/skr-jooq-mapper)
+
 #### Maven
 ```xml
 <dependency>
     <groupId>org.laxture</groupId>
     <artifactId>skr-jooq-mapper</artifactId>
-    <version>0.0.2</version>
+    <version><!-- See badge above for latest version --></version>
 </dependency>
 ```
 
 #### Gradle
 ```gradle
-implementation 'org.laxture:skr-jooq-mapper:0.0.2'
+implementation 'org.laxture:skr-jooq-mapper:${version}' // See badge above for latest version
 ```
 
 ### Pure Java Environment
@@ -500,4 +502,3 @@ converterRegistry.unregisterConverter("my-module");
  * limitations under the License.
  */
 ```
-
