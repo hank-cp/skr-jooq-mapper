@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.JSONB;
 import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.misc.MapperConversionException;
-import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
+import org.laxture.skr.jooq.mapper.misc.ReflectionUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -42,9 +42,9 @@ public class JsonbObjectConverter implements SkrJooqConverter<Object, JSONB> {
 
     @Override
     public int match(Type modelType, Type jooqType) {
-        if (!RefectionUtils.isAssignable(Collection.class, RefectionUtils.toClass(modelType))
-            && !RefectionUtils.isAssignable(Map.class, RefectionUtils.toClass(modelType))
-            && RefectionUtils.isAssignable(JSONB.class, jooqType)) {
+        if (!ReflectionUtils.isAssignable(Collection.class, ReflectionUtils.toClass(modelType))
+            && !ReflectionUtils.isAssignable(Map.class, ReflectionUtils.toClass(modelType))
+            && ReflectionUtils.isAssignable(JSONB.class, jooqType)) {
             return 11;
         }
         return MISMATCH;
@@ -63,7 +63,7 @@ public class JsonbObjectConverter implements SkrJooqConverter<Object, JSONB> {
     public Object convertToModelType(JSONB jVal, Type modelType) {
         if ("null".equals(jVal.toString())) return null;
         try {
-            return objectMapper.readValue(jVal.data(), RefectionUtils.toClass(modelType));
+            return objectMapper.readValue(jVal.data(), ReflectionUtils.toClass(modelType));
         } catch (IllegalArgumentException | JsonProcessingException e) {
             throw new MapperConversionException(getJooqType(), getModelType(), e);
         }

@@ -13,7 +13,7 @@ import org.laxture.skr.jooq.mapper.converter.json.JsonObjectConverter;
 import org.laxture.skr.jooq.mapper.converter.json.JsonbArrayConverter;
 import org.laxture.skr.jooq.mapper.converter.json.JsonbObjectConverter;
 import org.laxture.skr.jooq.mapper.misc.ObjectMapperConfigurer;
-import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
+import org.laxture.skr.jooq.mapper.misc.ReflectionUtils;
 import org.laxture.skr.jooq.test.model.User;
 
 import java.lang.reflect.Type;
@@ -38,18 +38,18 @@ class ConverterTest {
     @Test
     public void testJsonObjectConverter() {
         var converter = new JsonObjectConverter(new ObjectMapper());
-        assertThat(converter.match(RefectionUtils.findField(ConverterTest.class, "user").getGenericType(), org.jooq.JSON.class), is(11));
+        assertThat(converter.match(ReflectionUtils.findField(ConverterTest.class, "user").getGenericType(), org.jooq.JSON.class), is(11));
         User user = (User) converter.convertToModelType(JSON.json("{\"id\":1}"), User.class);
         assertThat(user, notNullValue());
         assertThat(user.getId(), is(1L));
 
         var converter_ = new JsonbObjectConverter(new ObjectMapper());
-        assertThat(converter_.match(RefectionUtils.findField(ConverterTest.class, "user").getGenericType(), org.jooq.JSONB.class), is(11));
+        assertThat(converter_.match(ReflectionUtils.findField(ConverterTest.class, "user").getGenericType(), org.jooq.JSONB.class), is(11));
     }
 
     @Test
     public void testJsonArrayConverter() {
-        Type userListType = RefectionUtils.findField(ConverterTest.class, "users").getGenericType();
+        Type userListType = ReflectionUtils.findField(ConverterTest.class, "users").getGenericType();
 
         var converter = new JsonArrayConverter(new ObjectMapper());
         assertThat(converter.match(userListType, org.jooq.JSON.class), is(12));
@@ -63,9 +63,9 @@ class ConverterTest {
 
     @Test
     public void testArrayConverter() {
-        Type userIdsType = RefectionUtils.findField(ConverterTest.class, "userIds").getGenericType();
-        Type friendIdsType = RefectionUtils.findField(ConverterTest.class, "friendIds").getGenericType();
-        Type friendNamesType = RefectionUtils.findField(ConverterTest.class, "friendNames").getGenericType();
+        Type userIdsType = ReflectionUtils.findField(ConverterTest.class, "userIds").getGenericType();
+        Type friendIdsType = ReflectionUtils.findField(ConverterTest.class, "friendIds").getGenericType();
+        Type friendNamesType = ReflectionUtils.findField(ConverterTest.class, "friendNames").getGenericType();
 
         var converter = new ArrayConverter();
 
@@ -196,7 +196,7 @@ class ConverterTest {
         SkrJooqConverter<?, ?> converter1 = registry.matchConverter(String.class, String.class);
         assertThat(converter1, notNullValue());
 
-        Map cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        Map cache = ReflectionUtils.getFieldValue(registry, "converterCache");
         assertThat(cache.size(), is(1));
     }
 
@@ -211,7 +211,7 @@ class ConverterTest {
         // 第一次调用建立缓存
         SkrJooqConverter<?, ?> originalConverter = registry.matchConverter(String.class, String.class);
         assertThat(originalConverter, notNullValue());
-        Map cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        Map cache = ReflectionUtils.getFieldValue(registry, "converterCache");
         assertThat(cache.size(), is(1));
 
         // 注册一个高优先级的自定义 converter
@@ -242,12 +242,12 @@ class ConverterTest {
         assertThat(newConverter, notNullValue());
         assertThat(newConverter, sameInstance(customConverter));
         assertThat(newConverter, not(sameInstance(originalConverter)));
-        cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        cache = ReflectionUtils.getFieldValue(registry, "converterCache");
         assertThat(cache.size(), is(1));
 
         // 注销自定义 converter
         registry.unregisterConverter("test-key");
-        cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        cache = ReflectionUtils.getFieldValue(registry, "converterCache");
         assertThat(cache.size(), is(0));
         // 缓存应该被清除，返回原始的内置 converter
         SkrJooqConverter<?, ?> converter2 = registry.matchConverter(String.class, String.class);
@@ -266,7 +266,7 @@ class ConverterTest {
         // 第一次调用建立缓存
         SkrJooqConverter<?, ?> converter1 = registry.matchConverter(String.class, String.class);
         assertThat(converter1, notNullValue());
-        Map cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        Map cache = ReflectionUtils.getFieldValue(registry, "converterCache");
         assertThat(cache.size(), is(1));
 
         // 验证缓存命中
@@ -275,7 +275,7 @@ class ConverterTest {
 
         // 显式清除缓存
         registry.clearCache();
-        cache = RefectionUtils.getFieldValue(registry, "converterCache");
+        cache = ReflectionUtils.getFieldValue(registry, "converterCache");
         assertThat(cache.size(), is(0));
     }
 }

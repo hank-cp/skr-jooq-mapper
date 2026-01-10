@@ -16,7 +16,7 @@
 package org.laxture.skr.jooq.mapper.converter;
 
 import lombok.NonNull;
-import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
+import org.laxture.skr.jooq.mapper.misc.ReflectionUtils;
 
 import java.lang.reflect.Type;
 
@@ -29,7 +29,7 @@ public class DirectConverter implements SkrJooqConverter<Object, Object> {
 
     @Override
     public int match(Type modelType, Type jooqType) {
-        if (RefectionUtils.isAssignable(getJooqType(), getModelType())) return 0;
+        if (ReflectionUtils.isAssignable(getJooqType(), getModelType())) return 0;
         return MISMATCH;
     }
 

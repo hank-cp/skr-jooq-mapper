@@ -22,7 +22,7 @@ import lombok.NonNull;
 import org.jooq.JSONB;
 import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.misc.MapperConversionException;
-import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
+import org.laxture.skr.jooq.mapper.misc.ReflectionUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -43,8 +43,8 @@ public class JsonbArrayConverter implements SkrJooqConverter<List<?>, JSONB> {
 
     @Override
     public int match(@NonNull Type modelType, @NonNull Type jooqType) {
-        if (RefectionUtils.isAssignable(List.class, modelType)
-            && RefectionUtils.isAssignable(JSONB.class, jooqType)) {
+        if (ReflectionUtils.isAssignable(List.class, modelType)
+            && ReflectionUtils.isAssignable(JSONB.class, jooqType)) {
             return 12;
         }
         return MISMATCH;
@@ -63,11 +63,11 @@ public class JsonbArrayConverter implements SkrJooqConverter<List<?>, JSONB> {
     public List<?> convertToModelType(JSONB jVal, Type modelType) {
         if ("null".equals(jVal.toString())) return null;
 
-        Type elementType = RefectionUtils.getComponentTypeOfListOrArray(modelType);
+        Type elementType = ReflectionUtils.getComponentTypeOfListOrArray(modelType);
         if (elementType == null) {
             throw new MapperConversionException(getJooqType(), getModelType());
         }
-        Class<?> elementClass = RefectionUtils.toClass(elementType);
+        Class<?> elementClass = ReflectionUtils.toClass(elementType);
         CollectionType collectionType = objectMapper.getSerializationConfig()
             .getTypeFactory().constructCollectionType(List.class, elementClass);
         try {

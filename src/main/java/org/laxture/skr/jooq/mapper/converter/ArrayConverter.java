@@ -18,7 +18,7 @@ package org.laxture.skr.jooq.mapper.converter;
 import lombok.NonNull;
 import org.apache.commons.beanutils.ConvertUtils;
 import org.laxture.skr.jooq.mapper.misc.MapperConversionException;
-import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
+import org.laxture.skr.jooq.mapper.misc.ReflectionUtils;
 
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -36,9 +36,9 @@ public class ArrayConverter implements SkrJooqConverter<Object, Object> {
 
     @Override
     public int match(@NonNull Type modelType, @NonNull Type jooqType) {
-        if (RefectionUtils.isArray(jooqType) // jooq is always array
-                && (RefectionUtils.isArray(modelType) // model could be array or collection
-                    || Collection.class.isAssignableFrom(RefectionUtils.toClass(modelType)))) {
+        if (ReflectionUtils.isArray(jooqType) // jooq is always array
+                && (ReflectionUtils.isArray(modelType) // model could be array or collection
+                    || Collection.class.isAssignableFrom(ReflectionUtils.toClass(modelType)))) {
             return 11;
         }
         return MISMATCH;
@@ -46,7 +46,7 @@ public class ArrayConverter implements SkrJooqConverter<Object, Object> {
 
     @Override
     public Object convertToJooqType(@NonNull Object mVal, Class<?> jooqType) {
-        if (RefectionUtils.isArray(mVal.getClass())) {
+        if (ReflectionUtils.isArray(mVal.getClass())) {
             return ConvertUtils.convert(mVal, jooqType);
         }
         if (mVal instanceof Collection<?> mCollection) {
@@ -57,24 +57,24 @@ public class ArrayConverter implements SkrJooqConverter<Object, Object> {
 
     @Override
     public Object convertToModelType(Object jVal, Type modelType) {
-        Type mElementType = RefectionUtils.getComponentTypeOfListOrArray(modelType);
+        Type mElementType = ReflectionUtils.getComponentTypeOfListOrArray(modelType);
         if (mElementType == null) {
             throw new MapperConversionException(jVal.getClass(), modelType);
         }
-        Class<?> mElementClass = RefectionUtils.toClass(mElementType);
+        Class<?> mElementClass = ReflectionUtils.toClass(mElementType);
 
-        if (RefectionUtils.isArray(modelType)) {
-            return ConvertUtils.convert(jVal, RefectionUtils.toClass(modelType));
+        if (ReflectionUtils.isArray(modelType)) {
+            return ConvertUtils.convert(jVal, ReflectionUtils.toClass(modelType));
         }
 
-        if (List.class.isAssignableFrom(RefectionUtils.toClass(modelType))) {
-            return Arrays.stream(RefectionUtils.wrapArray(jVal))
+        if (List.class.isAssignableFrom(ReflectionUtils.toClass(modelType))) {
+            return Arrays.stream(ReflectionUtils.wrapArray(jVal))
                 .map(elem -> ConvertUtils.convert(elem, mElementClass)).
                 collect(Collectors.toList());
         }
 
-        if (Set.class.isAssignableFrom(RefectionUtils.toClass(modelType))) {
-            return Arrays.stream(RefectionUtils.wrapArray(jVal))
+        if (Set.class.isAssignableFrom(ReflectionUtils.toClass(modelType))) {
+            return Arrays.stream(ReflectionUtils.wrapArray(jVal))
                 .map(elem -> ConvertUtils.convert(elem, mElementClass))
                 .collect(Collectors.toSet());
         }

@@ -24,7 +24,7 @@ import org.laxture.skr.jooq.mapper.annotation.LeftoverCollector;
 import org.laxture.skr.jooq.mapper.converter.ConverterRegistry;
 import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.misc.NamingUtils;
-import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
+import org.laxture.skr.jooq.mapper.misc.ReflectionUtils;
 
 import java.lang.reflect.Modifier;
 import java.util.Map;
@@ -74,11 +74,11 @@ public class SkrRecordUnmapperProvider implements RecordUnmapperProvider {
                     tableFieldCaseType, recordField.getName());
 
                 Object mVal;
-                RefectionUtils.FieldTuple modelField = RefectionUtils.findMatchModelField(model, fieldName);
+                ReflectionUtils.FieldTuple modelField = ReflectionUtils.findMatchModelField(model, fieldName);
                 if (modelField != null) {
                     // find model field
                     if (isTransientField(modelField.getField())) continue;
-                    mVal = RefectionUtils.getFieldValue(modelField.getOwner(), modelField.getField());
+                    mVal = ReflectionUtils.getFieldValue(modelField.getOwner(), modelField.getField());
                 } else {
                     // try to find value from leftover collector
                     mVal = findValueFromLeftoverCollector(model, fieldName);
@@ -94,11 +94,11 @@ public class SkrRecordUnmapperProvider implements RecordUnmapperProvider {
         }
 
         private Object findValueFromLeftoverCollector(Object modelInstance, String fieldName) {
-            java.lang.reflect.Field leftoverField = RefectionUtils.findFieldAnnotatedWith(
+            java.lang.reflect.Field leftoverField = ReflectionUtils.findFieldAnnotatedWith(
                 modelInstance.getClass(), LeftoverCollector.class);
             if (leftoverField == null || !Map.class.isAssignableFrom(leftoverField.getType())) return null;
 
-            Map<String, Object> leftoverMap = RefectionUtils.getFieldValue(modelInstance, leftoverField);
+            Map<String, Object> leftoverMap = ReflectionUtils.getFieldValue(modelInstance, leftoverField);
             if (leftoverMap == null || leftoverMap.isEmpty()) return null;
             return leftoverMap.get(fieldName);
         }

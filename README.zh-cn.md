@@ -216,13 +216,13 @@ public class Address {
 <dependency>
     <groupId>org.laxture</groupId>
     <artifactId>skr-jooq-mapper</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
 </dependency>
 ```
 
 #### Gradle
 ```gradle
-implementation 'org.laxture:skr-jooq-mapper:0.0.1'
+implementation 'org.laxture:skr-jooq-mapper:0.0.2'
 ```
 
 ### 纯 Java 环境

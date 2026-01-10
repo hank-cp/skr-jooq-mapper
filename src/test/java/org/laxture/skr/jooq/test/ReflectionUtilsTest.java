@@ -2,7 +2,7 @@ package org.laxture.skr.jooq.test;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
-import org.laxture.skr.jooq.mapper.misc.RefectionUtils;
+import org.laxture.skr.jooq.mapper.misc.ReflectionUtils;
 import org.laxture.skr.jooq.test.model.Address;
 import org.laxture.skr.jooq.test.model.User;
 import org.laxture.skr.jooq.test.model.UserProfile;
@@ -15,12 +15,12 @@ import java.util.Map;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
-class RefectionUtilsTest {
+class ReflectionUtilsTest {
 
     @Test
     public void callMethod() {
         String testStr = "asdf";
-        String newStr = RefectionUtils.callMethod(testStr, "replaceAll", "a", "b");
+        String newStr = ReflectionUtils.callMethod(testStr, "replaceAll", "a", "b");
         assertThat(newStr, equalTo("bsdf"));
     }
 
@@ -28,9 +28,9 @@ class RefectionUtilsTest {
     public void testIsPrimitive() {
         Double d1 = 1.0;
         double d2 = 1.0;
-        assertThat(RefectionUtils.isPrimitive(d1), equalTo(true));
-        assertThat(RefectionUtils.isPrimitive(d2), equalTo(true));
-        assertThat(RefectionUtils.isString("string"), equalTo(true));
+        assertThat(ReflectionUtils.isPrimitive(d1), equalTo(true));
+        assertThat(ReflectionUtils.isPrimitive(d2), equalTo(true));
+        assertThat(ReflectionUtils.isString("string"), equalTo(true));
     }
 
     public static class A {
@@ -78,30 +78,30 @@ class RefectionUtilsTest {
         c3.d = "c3";
         a.b.map.put("c3", c3);
 
-        assertThat(RefectionUtils.getFieldValue(a, "c.d"), equalTo("c0"));
-        assertThat(RefectionUtils.getFieldValue(a, "map.*"), hasItem("value"));
-        assertThat(RefectionUtils.getFieldValue(a, "map.key"), equalTo("value"));
-        assertThat(RefectionUtils.getFieldValue(a, "b.list"), hasItem("li1"));
-        assertThat(RefectionUtils.getFieldValue(a, "b.cList.d"), hasItem("c1"));
-        assertThat(RefectionUtils.getFieldValue(a, "b.cList.*.d"), hasItem("c1"));
-        assertThat(RefectionUtils.getFieldValue(a, "b.map.*.d"), allOf(
+        assertThat(ReflectionUtils.getFieldValue(a, "c.d"), equalTo("c0"));
+        assertThat(ReflectionUtils.getFieldValue(a, "map.*"), hasItem("value"));
+        assertThat(ReflectionUtils.getFieldValue(a, "map.key"), equalTo("value"));
+        assertThat(ReflectionUtils.getFieldValue(a, "b.list"), hasItem("li1"));
+        assertThat(ReflectionUtils.getFieldValue(a, "b.cList.d"), hasItem("c1"));
+        assertThat(ReflectionUtils.getFieldValue(a, "b.cList.*.d"), hasItem("c1"));
+        assertThat(ReflectionUtils.getFieldValue(a, "b.map.*.d"), allOf(
             (Matcher) hasSize(2), hasItem("c2"), hasItem("c3")));
-        assertThat(RefectionUtils.getFieldValue(a, "c.eval"), equalTo("c0"));
-        assertThat(RefectionUtils.getFieldValue(a, "c.fval"), equalTo(true));
+        assertThat(ReflectionUtils.getFieldValue(a, "c.eval"), equalTo("c0"));
+        assertThat(ReflectionUtils.getFieldValue(a, "c.fval"), equalTo(true));
     }
 
     @Test
     public void testGetStaticValue() {
-        assertThat(RefectionUtils.getFieldValue(A.class, "s"), equalTo(-1));
-        assertThat(RefectionUtils.getFieldValue(D.class, "s"), equalTo(-1));
+        assertThat(ReflectionUtils.getFieldValue(A.class, "s"), equalTo(-1));
+        assertThat(ReflectionUtils.getFieldValue(D.class, "s"), equalTo(-1));
     }
 
     @Test
     void testFindMatchModelField() {
         // find first level field
         User user = new User();
-        RefectionUtils.FieldTuple modelField =
-            RefectionUtils.findMatchModelField(user, "name");
+        ReflectionUtils.FieldTuple modelField =
+            ReflectionUtils.findMatchModelField(user, "name");
         assertThat(modelField, notNullValue());
         assertThat(modelField.getField(), notNullValue());
         assertThat(modelField.getField().getName(), equalTo("name"));
@@ -109,7 +109,7 @@ class RefectionUtilsTest {
 
         // find nested field
         user = new User();
-        modelField = RefectionUtils.findMatchModelField(user, "addressCity");
+        modelField = ReflectionUtils.findMatchModelField(user, "addressCity");
         assertThat(modelField, notNullValue());
         assertThat(modelField.getField(), notNullValue());
         assertThat(modelField.getField().getName(), equalTo("city"));
@@ -123,7 +123,7 @@ class RefectionUtilsTest {
 
         // find nested field with two words
         user = new User();
-        modelField = RefectionUtils.findMatchModelField(user, "userProfileAvatarUrl");
+        modelField = ReflectionUtils.findMatchModelField(user, "userProfileAvatarUrl");
         assertThat(modelField, notNullValue());
         assertThat(modelField.getField(), notNullValue());
         assertThat(modelField.getField().getName(), equalTo("avatarUrl"));
@@ -136,7 +136,7 @@ class RefectionUtilsTest {
 
         // find nested field with multiple levels
         user = new User();
-        modelField = RefectionUtils.findMatchModelField(user, "addressUserProfileAvatarUrl");
+        modelField = ReflectionUtils.findMatchModelField(user, "addressUserProfileAvatarUrl");
         assertThat(modelField, notNullValue());
         assertThat(modelField.getField(), notNullValue());
         assertThat(modelField.getField().getName(), equalTo("avatarUrl"));
@@ -150,12 +150,12 @@ class RefectionUtilsTest {
 
         // find non-exist field
         user = new User();
-        modelField = RefectionUtils.findMatchModelField(user, "nonExistField");
+        modelField = ReflectionUtils.findMatchModelField(user, "nonExistField");
         assertThat(modelField, nullValue());
 
         // find non-exist nested field
         user = new User();
-        modelField = RefectionUtils.findMatchModelField(user, "addressNonExistField");
+        modelField = ReflectionUtils.findMatchModelField(user, "addressNonExistField");
         assertThat(modelField, nullValue());
         assertThat(user.getAddress(), nullValue());
     }

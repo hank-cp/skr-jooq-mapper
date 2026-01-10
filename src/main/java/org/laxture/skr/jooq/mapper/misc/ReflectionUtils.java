@@ -34,9 +34,9 @@ import java.util.function.Supplier;
  *
  * @author <a href="https://github.com/hank-cp">Hank CP</a>
  */
-public final class RefectionUtils {
+public final class ReflectionUtils {
 
-    private RefectionUtils() {}
+    private ReflectionUtils() {}
 
     //*************************************************************************
     // Type Utils
@@ -79,7 +79,7 @@ public final class RefectionUtils {
     }
 
     public static <T> Map<TypeVariable<?>, Type> getTypesMap(Type targetType) {
-        Class<T> targetClass = RefectionUtils.toClass(targetType);
+        Class<T> targetClass = toClass(targetType);
         Map<TypeVariable<?>, Type> genericTypes = Collections.emptyMap();
         if (targetType instanceof ParameterizedType) {
             TypeVariable<Class<T>>[] typeParameters = targetClass.getTypeParameters();
@@ -175,7 +175,11 @@ public final class RefectionUtils {
      * @return the result
      */
     public static boolean isNumber(Type target) {
-        return Number.class.isAssignableFrom(wrap(RefectionUtils.toClass(target)));
+        return Number.class.isAssignableFrom(wrap(toClass(target)));
+    }
+
+    private static boolean isBooleanType(Class<?> type) {
+        return type.equals(Boolean.class) || type.equals(boolean.class);
     }
 
     /**
@@ -189,7 +193,7 @@ public final class RefectionUtils {
         if (!array.getClass().isArray()) {
             throw  new IllegalArgumentException("Cannot wrap array of type " + array.getClass());
         }
-        if (isPrimitive(RefectionUtils.getComponentTypeOfListOrArray(array.getClass()))) {
+        if (isPrimitive(getComponentTypeOfListOrArray(array.getClass()))) {
             if (array instanceof int[]) {
                 return ArrayUtils.toObject((int[]) array);
             } else if (array instanceof long[]) {
@@ -231,7 +235,7 @@ public final class RefectionUtils {
      * @return the result
      */
     public static boolean isArray(Type outType) {
-        return RefectionUtils.toClass(outType).isArray();
+        return toClass(outType).isArray();
     }
 
     /**
@@ -270,12 +274,11 @@ public final class RefectionUtils {
         return MapEntryTypes.OBJECT_OBJECT;
     }
 
-
     private static Type getGenericInterface(Type t, Class<?> i) {
-        if (RefectionUtils.areEquals(t, i)) {
+        if (areEquals(t, i)) {
             return t;
         }
-        Type[] genericInterfaces = RefectionUtils.toClass(t).getGenericInterfaces();
+        Type[] genericInterfaces = toClass(t).getGenericInterfaces();
         for(Type it : genericInterfaces) {
             if (isAssignable(i, it)) {
                 if (areEquals(it, i)) {
@@ -289,10 +292,8 @@ public final class RefectionUtils {
     }
 
     private static Type getGenericSuperType(Type t) {
-        return RefectionUtils.toClass(t).getGenericSuperclass();
+        return toClass(t).getGenericSuperclass();
     }
-
-
 
     /**
      * Checks if assignable.
@@ -302,7 +303,7 @@ public final class RefectionUtils {
      * @return the result
      */
     public static boolean isAssignable(Type type, Type from) {
-        return isAssignable(RefectionUtils.toBoxedClass(type), from);
+        return isAssignable(toBoxedClass(type), from);
     }
 
     /**
@@ -323,7 +324,7 @@ public final class RefectionUtils {
      * @return the result
      */
     public static boolean isJavaLang(Type target) {
-        Class<?> clazz = RefectionUtils.toClass(target);
+        Class<?> clazz = toClass(target);
         return clazz.isPrimitive() || (clazz.getPackage() != null && clazz.getPackage().getName().equals("java.lang"));
     }
 
@@ -335,7 +336,7 @@ public final class RefectionUtils {
      * @return the result
      */
     public static boolean isInPackage(Type target, Predicate<String> packagePredicate) {
-        Class<?> clazz = RefectionUtils.toClass(target);
+        Class<?> clazz = toClass(target);
         Package clazzPackage = clazz.getPackage();
         if (clazzPackage != null) {
             return packagePredicate.test(clazzPackage.getName());
@@ -350,7 +351,7 @@ public final class RefectionUtils {
      * @return the result
      */
     public static boolean isEnum(Type target) {
-        Class<?> clazz = RefectionUtils.toClass(target);
+        Class<?> clazz = toClass(target);
         return clazz.isEnum();
     }
 
@@ -361,7 +362,7 @@ public final class RefectionUtils {
      * @return the result
      */
     public static Class<?> toBoxedClass(Type type) {
-        return RefectionUtils.toBoxedClass(toClass(type));
+        return toBoxedClass(toClass(type));
     }
 
     /**
@@ -390,14 +391,14 @@ public final class RefectionUtils {
      * @return the result
      */
     public static boolean areEquals(Type target, Type clazz) {
-        return RefectionUtils.toClass(clazz).equals(RefectionUtils.toClass(target));
+        return toClass(clazz).equals(toClass(target));
     }
 
     /**
-     * Gets the genericparameterforclass.
+     * Gets the generic parameter for class.
      *
-     * @param type the type
-     * @param interfaceClass the interfaceClass
+     * @param type to be resolved
+     * @param interfaceClass that defines the generic parameters
      * @return the result
      */
     public static Type[] getGenericParameterForClass(Type type, Class<?> interfaceClass) {
@@ -423,7 +424,6 @@ public final class RefectionUtils {
         }
     }
 
-
     /**
      * Resolvetypevariables operation.
      *
@@ -447,7 +447,7 @@ public final class RefectionUtils {
      * @return the result
      */
     public static Type resolveTypeVariable(Type type, TypeVariable t) {
-        TypeVariable<Class<Object>>[] typeParameters = RefectionUtils.toClass(type).getTypeParameters();
+        TypeVariable<Class<Object>>[] typeParameters = toClass(type).getTypeParameters();
 
         for(int i = 0; i < typeParameters.length; i++) {
             TypeVariable<Class<Object>> typeVariable = typeParameters[i];
@@ -472,7 +472,7 @@ public final class RefectionUtils {
      * @return the result
      */
     public static boolean isKotlinClass(Type target) {
-        Annotation[] annotations = RefectionUtils.toClass(target).getDeclaredAnnotations();
+        Annotation[] annotations = toClass(target).getDeclaredAnnotations();
         if (annotations != null) {
             for(int i = 0; i < annotations.length;i++) {
                 Annotation a = annotations[i];
@@ -625,23 +625,23 @@ public final class RefectionUtils {
      * @param fieldName the fieldName
      * @return the result
      */
-    public static RefectionUtils.FieldTuple findMatchModelField(Object modelInstance, String fieldName) {
+    public static FieldTuple findMatchModelField(Object modelInstance, String fieldName) {
         return findMatchModelField(modelInstance, fieldName, new ArrayList<>());
     }
 
-    private static RefectionUtils.FieldTuple findMatchModelField(Object modelInstance, String fieldName,
-                                                                 List<NestedObjectStub> context) {
-        java.lang.reflect.Field field = RefectionUtils.findField(modelInstance.getClass(), fieldName);
+    private static FieldTuple findMatchModelField(Object modelInstance, String fieldName,
+                                                                  List<NestedObjectStub> context) {
+        java.lang.reflect.Field field = findField(modelInstance.getClass(), fieldName);
         if (field != null) {
-            return new RefectionUtils.FieldTuple(field, modelInstance, context);
+            return new FieldTuple(field, modelInstance, context);
         }
 
         String[] nameParts = StringUtils.splitByCharacterTypeCamelCase(fieldName);
         int partIndex = 0;
         StringBuilder possibleNestedField = new StringBuilder(nameParts[partIndex]);
         while (!possibleNestedField.toString().equals(fieldName)) {
-            field = RefectionUtils.findField(modelInstance.getClass(), possibleNestedField.toString());
-            if (field != null && !RefectionUtils.isPrimitive(field.getType())) {
+            field = findField(modelInstance.getClass(), possibleNestedField.toString());
+            if (field != null && !isPrimitive(field.getType())) {
                 Object nestedObject = getFieldValue(modelInstance, field);
                 if (nestedObject == null) {
                     Field finalField1 = field;

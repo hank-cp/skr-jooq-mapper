@@ -25,6 +25,84 @@ import org.laxture.skr.jooq.mapper.TableFieldCaseType;
 public class NamingUtils {
 
     /**
+     * Converts a camelCase field name to the target case type.
+     *
+     * @param tableFieldCaseType the target case type
+     * @param fieldName the camelCase field name
+     * @return the converted field name
+     */
+    public static String convertFromCamelCase(TableFieldCaseType tableFieldCaseType,
+                                              String fieldName) {
+        if (fieldName == null || fieldName.isEmpty()) return fieldName;
+
+        switch (tableFieldCaseType) {
+            case CAMEL_CASE:
+                return fieldName;
+            case SNAKE_CASE:
+                return camelToDelimitedCase(fieldName, '_', false);
+            case SCREAMING_SNAKE_CASE:
+                return camelToDelimitedCase(fieldName, '_', true);
+            case KEBAB_CASE:
+                return camelToDelimitedCase(fieldName, '-', false);
+            default:
+                return fieldName;
+        }
+    }
+
+    /**
+     * Converts camelCase to a delimited case format (snake_case, SCREAMING_SNAKE_CASE, or kebab-case).
+     *
+     * @param camelCase the camelCase string
+     * @param delimiter the delimiter character ('_' or '-')
+     * @param uppercase whether to convert to uppercase
+     * @return the converted string
+     */
+    private static String camelToDelimitedCase(String camelCase, char delimiter, boolean uppercase) {
+        if (camelCase == null || camelCase.isEmpty()) return camelCase;
+
+        StringBuilder result = new StringBuilder(camelCase.length() + 5);
+        
+        for (int i = 0; i < camelCase.length(); i++) {
+            char ch = camelCase.charAt(i);
+            
+            if (Character.isUpperCase(ch)) {
+                // Add delimiter before uppercase letter (except at the beginning)
+                if (i > 0 && shouldAddDelimiter(camelCase, i)) {
+                    result.append(delimiter);
+                }
+                result.append(uppercase ? ch : Character.toLowerCase(ch));
+            } else {
+                result.append(uppercase ? Character.toUpperCase(ch) : ch);
+            }
+        }
+        
+        return result.toString();
+    }
+
+    /**
+     * Determines whether to add a delimiter before the current uppercase character.
+     * Handles consecutive uppercase letters (e.g., "XMLParser" -> "xml_parser" not "x_m_l_parser")
+     *
+     * @param str the input string
+     * @param index the current index
+     * @return true if delimiter should be added
+     */
+    private static boolean shouldAddDelimiter(String str, int index) {
+        // Always add delimiter if previous char is lowercase
+        if (Character.isLowerCase(str.charAt(index - 1))) {
+            return true;
+        }
+        
+        // For consecutive uppercase letters, add delimiter before the last one
+        // if it's followed by a lowercase letter (e.g., "XMLParser" -> "XML_Parser")
+        if (index + 1 < str.length() && Character.isLowerCase(str.charAt(index + 1))) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
      * Converts the value to target type.
      *
      * @param tableFieldCaseType the tableFieldCaseType
@@ -41,11 +119,15 @@ public class NamingUtils {
             case SNAKE_CASE:
             case SCREAMING_SNAKE_CASE:
                 String[] parts = fieldName.split("_");
-                StringBuilder result = new StringBuilder(parts[0].toLowerCase());
-                for (int i = 1; i < parts.length; i++) {
+                StringBuilder result = new StringBuilder();
+                for (int i = 0; i < parts.length; i++) {
                     if (!parts[i].isEmpty()) {
-                        result.append(Character.toUpperCase(parts[i].charAt(0)))
-                            .append(parts[i].substring(1).toLowerCase());
+                        if (result.length() == 0) {
+                            result.append(parts[i].toLowerCase());
+                        } else {
+                            result.append(Character.toUpperCase(parts[i].charAt(0)))
+                                .append(parts[i].substring(1).toLowerCase());
+                        }
                     }
                 }
                 return result.toString();
