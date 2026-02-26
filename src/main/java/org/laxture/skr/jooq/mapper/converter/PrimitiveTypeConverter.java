@@ -20,9 +20,12 @@ import org.apache.commons.beanutils.ConvertUtils;
 import org.laxture.skr.jooq.mapper.misc.ReflectionUtils;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * Converter for type conversion operations.
+ * Supports primitive types, wrapper types, and java.math types (BigDecimal, BigInteger).
  *
  * @author <a href="https://github.com/hank-cp">Hank CP</a>
  */
@@ -31,7 +34,15 @@ public class PrimitiveTypeConverter implements SkrJooqConverter<Object, Object> 
     @Override
     public int match(Type modelType, Type jooqType) {
         if (ReflectionUtils.isPrimitive(modelType) && ReflectionUtils.isPrimitive(jooqType)) return 1;
+        // Support BigDecimal and BigInteger conversions
+        if (isBigNumberType(modelType) || isBigNumberType(jooqType)) return 1;
         return MISMATCH;
+    }
+
+    private boolean isBigNumberType(Type type) {
+        Class<?> clazz = ReflectionUtils.toClass(type);
+        if (clazz == null) return false;
+        return clazz == BigDecimal.class || clazz == BigInteger.class;
     }
 
     @Override

@@ -166,6 +166,97 @@ class ConverterTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    public void testBigNumberConverter() {
+        ConverterRegistry registry = new ConverterRegistry();
+
+        // Test BigDecimal conversions
+        // BigDecimal to Double
+        SkrJooqConverter<BigDecimal, Double> converter1 = (SkrJooqConverter<BigDecimal, Double>) registry.matchConverter(BigDecimal.class, Double.class);
+        assertThat(converter1, notNullValue());
+        BigDecimal result1 = converter1.convertToModelType(123.456, BigDecimal.class);
+        assertThat(result1, notNullValue());
+        assertThat(result1.doubleValue(), is(closeTo(123.456, 0.001)));
+
+        // Double to BigDecimal
+        Double result2 = converter1.convertToJooqType(BigDecimal.valueOf(789.012), Double.class);
+        assertThat(result2, notNullValue());
+        assertThat(result2, is(closeTo(789.012, 0.001)));
+
+        // BigDecimal to Integer
+        SkrJooqConverter<BigDecimal, Integer> converter2 = (SkrJooqConverter<BigDecimal, Integer>) registry.matchConverter(BigDecimal.class, Integer.class);
+        assertThat(converter2, notNullValue());
+        BigDecimal result3 = converter2.convertToModelType(100, BigDecimal.class);
+        assertThat(result3, notNullValue());
+        assertThat(result3.intValue(), is(100));
+
+        // Integer to BigDecimal
+        Integer result4 = converter2.convertToJooqType(BigDecimal.valueOf(200), Integer.class);
+        assertThat(result4, notNullValue());
+        assertThat(result4, is(200));
+
+        // BigDecimal to String
+        SkrJooqConverter<BigDecimal, String> converter3 = (SkrJooqConverter<BigDecimal, String>) registry.matchConverter(BigDecimal.class, String.class);
+        assertThat(converter3, notNullValue());
+        BigDecimal result5 = converter3.convertToModelType("123.456", BigDecimal.class);
+        assertThat(result5, notNullValue());
+        assertThat(result5.doubleValue(), is(closeTo(123.456, 0.001)));
+
+        // String to BigDecimal
+        String result6 = converter3.convertToJooqType(BigDecimal.valueOf(789.012), String.class);
+        assertThat(result6, notNullValue());
+        assertThat(result6, is("789.012"));
+
+        // Test BigInteger conversions
+        // BigInteger to Long
+        SkrJooqConverter<BigInteger, Long> converter4 = (SkrJooqConverter<BigInteger, Long>) registry.matchConverter(BigInteger.class, Long.class);
+        assertThat(converter4, notNullValue());
+        BigInteger result7 = converter4.convertToModelType(9999999999L, BigInteger.class);
+        assertThat(result7, notNullValue());
+        assertThat(result7.longValue(), is(9999999999L));
+
+        // Long to BigInteger
+        Long result8 = converter4.convertToJooqType(BigInteger.valueOf(8888888888L), Long.class);
+        assertThat(result8, notNullValue());
+        assertThat(result8, is(8888888888L));
+
+        // BigInteger to Integer
+        SkrJooqConverter<BigInteger, Integer> converter5 = (SkrJooqConverter<BigInteger, Integer>) registry.matchConverter(BigInteger.class, Integer.class);
+        assertThat(converter5, notNullValue());
+        BigInteger result9 = converter5.convertToModelType(1000, BigInteger.class);
+        assertThat(result9, notNullValue());
+        assertThat(result9.intValue(), is(1000));
+
+        // Integer to BigInteger
+        Integer result10 = converter5.convertToJooqType(BigInteger.valueOf(2000), Integer.class);
+        assertThat(result10, notNullValue());
+        assertThat(result10, is(2000));
+
+        // BigInteger to String
+        SkrJooqConverter<BigInteger, String> converter6 = (SkrJooqConverter<BigInteger, String>) registry.matchConverter(BigInteger.class, String.class);
+        assertThat(converter6, notNullValue());
+        BigInteger result11 = converter6.convertToModelType("12345678901234567890", BigInteger.class);
+        assertThat(result11, notNullValue());
+        assertThat(result11.toString(), is("12345678901234567890"));
+
+        // String to BigInteger
+        String result12 = converter6.convertToJooqType(new BigInteger("98765432109876543210"), String.class);
+        assertThat(result12, notNullValue());
+        assertThat(result12, is("98765432109876543210"));
+
+        // Test BigDecimal <-> BigInteger conversion
+        SkrJooqConverter<BigDecimal, BigInteger> converter7 = (SkrJooqConverter<BigDecimal, BigInteger>) registry.matchConverter(BigDecimal.class, BigInteger.class);
+        assertThat(converter7, notNullValue());
+        BigDecimal result13 = converter7.convertToModelType(new BigInteger("12345"), BigDecimal.class);
+        assertThat(result13, notNullValue());
+        assertThat(result13.toBigInteger(), is(new BigInteger("12345")));
+
+        BigInteger result14 = converter7.convertToJooqType(BigDecimal.valueOf(67890), BigInteger.class);
+        assertThat(result14, notNullValue());
+        assertThat(result14, is(BigInteger.valueOf(67890)));
+    }
+
+    @Test
     public void testObjectMapper() throws Exception {
         ObjectMapper objectMapper = ObjectMapperConfigurer.setupPersistentObjectMapper(new ObjectMapper());
 
