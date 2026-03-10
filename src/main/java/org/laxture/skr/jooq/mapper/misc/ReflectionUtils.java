@@ -532,7 +532,19 @@ public final class ReflectionUtils {
      * @param clazz the clazz
      * @return the result
      */
+    @SuppressWarnings("unchecked")
     public static <T> T createInstance(Class<T> clazz) {
+        // Handle common interface types with default implementations
+        if (Map.class.isAssignableFrom(clazz) && !Modifier.isAbstract(clazz.getModifiers())) {
+            // If it's a concrete Map implementation, try to instantiate it
+        } else if (Map.class.equals(clazz)) {
+            return (T) new LinkedHashMap<>();
+        } else if (List.class.equals(clazz)) {
+            return (T) new ArrayList<>();
+        } else if (Set.class.equals(clazz)) {
+            return (T) new LinkedHashSet<>();
+        }
+
         Supplier<T> instructor = null;
 
         for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
@@ -626,11 +638,24 @@ public final class ReflectionUtils {
      * @return the result
      */
     public static FieldTuple findMatchModelField(Object modelInstance, String fieldName) {
-        return findMatchModelField(modelInstance, fieldName, new ArrayList<>());
+        return findMatchModelField(modelInstance, fieldName, new ArrayList<>(), true);
+    }
+
+    /**
+     * Findmatchmodelfield operation.
+     *
+     * @param modelInstance the modelInstance
+     * @param fieldName the fieldName
+     * @param createNestedObject whether to create nested object if null
+     * @return the result
+     */
+    public static FieldTuple findMatchModelField(Object modelInstance, String fieldName, boolean createNestedObject) {
+        return findMatchModelField(modelInstance, fieldName, new ArrayList<>(), createNestedObject);
     }
 
     private static FieldTuple findMatchModelField(Object modelInstance, String fieldName,
-                                                                  List<NestedObjectStub> context) {
+                                                                  List<NestedObjectStub> context,
+                                                                  boolean createNestedObject) {
         java.lang.reflect.Field field = findField(modelInstance.getClass(), fieldName);
         if (field != null) {
             return new FieldTuple(field, modelInstance, context);
@@ -641,7 +666,9 @@ public final class ReflectionUtils {
         StringBuilder possibleNestedField = new StringBuilder(nameParts[partIndex]);
         while (!possibleNestedField.toString().equals(fieldName)) {
             field = findField(modelInstance.getClass(), possibleNestedField.toString());
-            if (field != null && !isPrimitive(field.getType())) {
+            if (field != null && !isPrimitive(field.getType())
+                    && !Collection.class.isAssignableFrom(field.getType())
+                    && !Map.class.isAssignableFrom(field.getType())) {
                 Object nestedObject = getFieldValue(modelInstance, field);
                 if (nestedObject == null) {
                     Field finalField1 = field;
@@ -650,6 +677,10 @@ public final class ReflectionUtils {
                     }).findAny().map(NestedObjectStub::nestedObject).orElse(null);
                 }
                 if (nestedObject == null) {
+                    // If nested object is null and we shouldn't create it, return null
+                    if (!createNestedObject) {
+                        return null;
+                    }
                     nestedObject = createInstance(field.getType());
                     Object finalNestedObject = nestedObject;
                     context.add(new NestedObjectStub(modelInstance, field, finalNestedObject));
@@ -657,7 +688,7 @@ public final class ReflectionUtils {
 
                 return findMatchModelField(nestedObject,
                     StringUtils.uncapitalize(fieldName.replaceFirst(
-                        "^" + possibleNestedField, "")), context);
+                        "^" + possibleNestedField, "")), context, createNestedObject);
             }
             possibleNestedField.append(StringUtils.capitalize(nameParts[++partIndex]));
         }

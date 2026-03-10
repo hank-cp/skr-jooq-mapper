@@ -74,7 +74,8 @@ public class SkrRecordUnmapperProvider implements RecordUnmapperProvider {
                     tableFieldCaseType, recordField.getName());
 
                 Object mVal;
-                ReflectionUtils.FieldTuple modelField = ReflectionUtils.findMatchModelField(model, fieldName);
+                // Use false for createNestedObject - don't create nested objects if null
+                ReflectionUtils.FieldTuple modelField = ReflectionUtils.findMatchModelField(model, fieldName, false);
                 if (modelField != null) {
                     // find model field
                     if (isTransientField(modelField.getField())) continue;

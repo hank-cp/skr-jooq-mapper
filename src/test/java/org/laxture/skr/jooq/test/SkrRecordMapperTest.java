@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
+import org.jooq.UpdatableRecord;
 import org.jooq.impl.DSL;
+import org.jooq.impl.UpdatableRecordImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.laxture.skr.jooq.mapper.SkrRecordMapperProvider;
@@ -129,5 +131,43 @@ class SkrRecordMapperTest {
         Map<String, Object> miscInfo = (Map<String, Object>) user.getExtras().get("miscInfo");
         assertThat(miscInfo, notNullValue());
         assertThat(miscInfo.get("a"), is("b"));
+    }
+
+    @Test
+    void testMapTypeMapping() {
+        org.jooq.Record record = dsl.resultQuery("SELECT name, age, address_city FROM users WHERE name = 'Skr'").fetchOne();
+
+        // Test mapping to Map type directly
+        Map<String, Object> result = record.into(Map.class);
+
+        assertThat(result, notNullValue());
+        assertThat(result.get("name"), is("Skr"));
+        assertThat(result.get("age"), is(30));
+        assertThat(result.get("addressCity"), is("New York"));
+    }
+
+    @Test
+    void testMapTypeMappingWithAllFields() {
+        org.jooq.Record record = dsl.resultQuery("SELECT * FROM users WHERE name = 'Skr'").fetchOne();
+
+        // Test mapping all fields to Map type
+        Map<String, Object> result = record.into(Map.class);
+
+        assertThat(result, notNullValue());
+        assertThat(result.get("name"), is("Skr"));
+        assertThat(result.get("age"), is(30));
+        assertThat(result.containsKey("id"), is(true));
+        assertThat(result.containsKey("createdAt"), is(true));
+        assertThat(result.containsKey("birthDate"), is(true));
+        assertThat(result.containsKey("addressLine1"), is(true));
+        assertThat(result.containsKey("addressCity"), is(true));
+    }
+
+    @Test
+    void testToSetterOverField() {
+        User user = record.into(User.class);
+        user.setAge(31);
+        user.setImmutable("changed");
+        record.from(user);
     }
 }

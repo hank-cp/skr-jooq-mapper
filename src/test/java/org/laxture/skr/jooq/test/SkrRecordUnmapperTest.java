@@ -154,6 +154,31 @@ class SkrRecordUnmapperTest {
     }
 
     @Test
+    void testToGetterOverField() {
+        User user = new User();
+
+        UpdatableRecord<?> record = new UpdatableRecordImpl(userTable);
+        record.attach(dsl.configuration());
+        record.from(user);
+        assertThat(record, notNullValue());
+        assertThat(record.getValue(userTable.field("ID")), nullValue());
+    }
+
+    @Test
+    void testToRecordWithNullNestedObject() {
+        User user = new User();
+        user.setId(10);
+        user.setAddress(null);
+
+        UpdatableRecord<?> record = new UpdatableRecordImpl(userTable);
+        record.attach(dsl.configuration());
+        record.from(user);
+        assertThat(record, notNullValue());
+        assertThat(record.getValue(userTable.field("ADDRESS_ID")), nullValue());
+    }
+
+
+    @Test
     void testUpdate() {
         org.jooq.Record record = dsl.resultQuery("SELECT * FROM users WHERE name = 'Skr'").fetchOne();
         User user = record.into(User.class);

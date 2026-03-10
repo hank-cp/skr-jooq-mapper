@@ -53,4 +53,14 @@ public class User implements MappingHook {
     public void postMapping() {
         this.postMappingCalled = true;
     }
+
+    public Long getId() {
+        if (id == 0) return null;
+        return id;
+    }
+
+    public void setAge(int age) {
+        if (age == 0) this.age = null;
+        this.age = age;
+    }
 }

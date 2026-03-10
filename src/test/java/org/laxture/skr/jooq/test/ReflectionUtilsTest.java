@@ -158,5 +158,22 @@ class ReflectionUtilsTest {
         modelField = ReflectionUtils.findMatchModelField(user, "addressNonExistField");
         assertThat(modelField, nullValue());
         assertThat(user.getAddress(), nullValue());
+
+        // Collection type field should not be treated as nested object
+        // When field name starts with a Collection field name (e.g., "eduExperiences"),
+        // it should skip the Collection field and continue searching or return null
+        user = new User();
+        modelField = ReflectionUtils.findMatchModelField(user, "eduExperiencesSomeField");
+        // Collection fields should not be instantiated as nested objects
+        // The field "eduExperiences" is a List, so it should not be treated as a nested object
+        // and the method should continue searching or return null
+        assertThat(user.getEduExperiences(), nullValue());
+
+        // Map type field should not be treated as nested object
+        user = new User();
+        modelField = ReflectionUtils.findMatchModelField(user, "metaInfoSomeField");
+        // Map fields should not be instantiated as nested objects
+        // The field "metaInfo" is a Map, so it should not be treated as a nested object
+        assertThat(user.getMetaInfo(), nullValue());
     }
 }

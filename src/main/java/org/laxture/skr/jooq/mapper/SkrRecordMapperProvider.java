@@ -77,6 +77,21 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
             E modelInstance = ReflectionUtils.createInstance(modelType);
             Set<String> processedFields = new HashSet<>();
 
+            // Handle Map type directly without reflection
+            if (modelInstance instanceof Map<?, ?> mapInstance) {
+                for (Field<?> recordField : record.fields()) {
+                    Object jVal = recordField.get(record);
+                    String fieldName = NamingUtils.convertToCamelCase(
+                        tableFieldCaseType, recordField.getName());
+
+                    Object converted = convertFieldValue(jVal, Object.class);
+                    if (converted != null) {
+                        ((Map<String, Object>) mapInstance).put(fieldName, converted);
+                    }
+                }
+                return modelInstance;
+            }
+
             for (Field<?> recordField : record.fields()) {
                 Object jVal = recordField.get(record);
                 String fieldName = NamingUtils.convertToCamelCase(
@@ -125,8 +140,8 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
             modelType, LeftoverCollector.class);
         if (leftoverField == null || !Map.class.isAssignableFrom(leftoverField.getType())) return;
 
-        // collect leftover fields
-        Map<String, Object> leftoverMap = new HashMap<>();
+        Map<String, Object> leftoverMap = ReflectionUtils.getFieldValue(instance, leftoverField);
+        if (leftoverMap == null) leftoverMap = (Map<String, Object>) ReflectionUtils.createInstance(leftoverField.getType());
         for (Field<?> field : record.fields()) {
             String fieldName = field.getName();
             if (processedFields.contains(fieldName) || field.get(record) == null) continue;
@@ -155,6 +170,8 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
 
         if (leftoverMap.isEmpty()) return;
         // set leftover field to the model instance
-        ReflectionUtils.setFieldValue(instance, leftoverField, leftoverMap);
+        if (leftoverMap != ReflectionUtils.getFieldValue(instance, leftoverField)) {
+            ReflectionUtils.setFieldValue(instance, leftoverField, leftoverMap);
+        }
     }
 }
