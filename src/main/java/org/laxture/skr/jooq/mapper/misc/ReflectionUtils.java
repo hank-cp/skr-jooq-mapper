@@ -28,6 +28,9 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+
+import static org.apache.commons.lang3.StringUtils.capitalize;
 
 /**
  * Utility class for refection operations.
@@ -586,12 +589,6 @@ public final class ReflectionUtils {
     // Field Utils
     //*************************************************************************
 
-    /**
-     * Gets the allfields.
-     *
-     * @param clazz the clazz
-     * @return the result
-     */
     public static List<Field> getAllFields(Class<?> clazz) {
         List<Field> fields = new ArrayList<>();
         Class<?> current = clazz;
@@ -602,13 +599,6 @@ public final class ReflectionUtils {
         return fields;
     }
 
-    /**
-     * Findfieldannotatedwith operation.
-     *
-     * @param clazz the clazz
-     * @param annotation the annotation
-     * @return the result
-     */
     public static Field findFieldAnnotatedWith(Class<?> clazz, Class<? extends Annotation> annotation) {
         for (Field field : getAllFields(clazz)) {
             if (field.isAnnotationPresent(annotation)) return field;
@@ -616,13 +606,6 @@ public final class ReflectionUtils {
         return null;
     }
 
-    /**
-     * Findfield operation.
-     *
-     * @param clazz the clazz
-     * @param fieldName the fieldName
-     * @return the result
-     */
     public static Field findField(Class<?> clazz, String fieldName) {
         for (Field field : getAllFields(clazz)) {
             if (field.getName().equals(fieldName)) return field;
@@ -630,15 +613,30 @@ public final class ReflectionUtils {
         return null;
     }
 
-    /**
-     * Findmatchmodelfield operation.
-     *
-     * @param modelInstance the modelInstance
-     * @param fieldName the fieldName
-     * @return the result
-     */
-    public static FieldTuple findMatchModelField(Object modelInstance, String fieldName) {
-        return findMatchModelField(modelInstance, fieldName, new ArrayList<>(), true);
+    public static <T> Accessor findAccessor(T instance, String fieldName) {
+        Class<?> clazz = instance.getClass();
+        Field matchedField = null;
+        try {
+            matchedField = clazz.getDeclaredField(fieldName);
+        } catch (NoSuchFieldException ignored) {}
+        if (matchedField == null) {
+            try {
+                matchedField = clazz.getField(fieldName);
+            } catch (NoSuchFieldException ignored) {}
+        }
+        Method matchedGetter = getDeclaredMethod(clazz, "get" + StringUtils.capitalize(fieldName));
+        if (matchedGetter == null) matchedGetter = getMethod(clazz, "get" + StringUtils.capitalize(fieldName));
+        Method matchedSetter = Stream.concat(Arrays.stream(clazz.getDeclaredMethods()), Arrays.stream(clazz.getMethods()))
+            .filter(method -> {
+                return method.getName().equals("set" + StringUtils.capitalize(fieldName));
+            }).findFirst().orElse(null);
+
+        if (matchedField == null && matchedGetter == null && matchedSetter == null) return null;
+        return new Accessor(matchedGetter, matchedSetter, matchedField);
+    }
+
+    public static AccessorTuple findMatchModelAccessor(Object modelInstance, String fieldName) {
+        return findMatchModelAccessor(modelInstance, fieldName, new ArrayList<>(), true);
     }
 
     /**
@@ -649,31 +647,31 @@ public final class ReflectionUtils {
      * @param createNestedObject whether to create nested object if null
      * @return the result
      */
-    public static FieldTuple findMatchModelField(Object modelInstance, String fieldName, boolean createNestedObject) {
-        return findMatchModelField(modelInstance, fieldName, new ArrayList<>(), createNestedObject);
+    public static AccessorTuple findMatchModelAccessor(Object modelInstance, String fieldName, boolean createNestedObject) {
+        return findMatchModelAccessor(modelInstance, fieldName, new ArrayList<>(), createNestedObject);
     }
 
-    private static FieldTuple findMatchModelField(Object modelInstance, String fieldName,
-                                                                  List<NestedObjectStub> context,
-                                                                  boolean createNestedObject) {
-        java.lang.reflect.Field field = findField(modelInstance.getClass(), fieldName);
-        if (field != null) {
-            return new FieldTuple(field, modelInstance, context);
+    private static AccessorTuple findMatchModelAccessor(Object modelInstance, String fieldName,
+                                                        List<NestedObjectStub> context,
+                                                        boolean createNestedObject) {
+        Accessor accessor = findAccessor(modelInstance, fieldName);
+        if (accessor != null) {
+            return new AccessorTuple(accessor, modelInstance, context);
         }
 
         String[] nameParts = StringUtils.splitByCharacterTypeCamelCase(fieldName);
         int partIndex = 0;
         StringBuilder possibleNestedField = new StringBuilder(nameParts[partIndex]);
         while (!possibleNestedField.toString().equals(fieldName)) {
-            field = findField(modelInstance.getClass(), possibleNestedField.toString());
-            if (field != null && !isPrimitive(field.getType())
-                    && !Collection.class.isAssignableFrom(field.getType())
-                    && !Map.class.isAssignableFrom(field.getType())) {
-                Object nestedObject = getFieldValue(modelInstance, field);
+            accessor = findAccessor(modelInstance, possibleNestedField.toString());
+            if (accessor != null && !isPrimitive(accessor.getType())
+                    && !Collection.class.isAssignableFrom(accessor.getType())
+                    && !Map.class.isAssignableFrom(accessor.getType())) {
+                Object nestedObject = accessor.getValue(modelInstance);
                 if (nestedObject == null) {
-                    Field finalField1 = field;
+                    Accessor finalAccessor = accessor;
                     nestedObject = context.stream().filter(stub -> {
-                        return stub.owner == modelInstance && stub.field == finalField1;
+                        return stub.owner == modelInstance && stub.accessor == finalAccessor;
                     }).findAny().map(NestedObjectStub::nestedObject).orElse(null);
                 }
                 if (nestedObject == null) {
@@ -681,16 +679,16 @@ public final class ReflectionUtils {
                     if (!createNestedObject) {
                         return null;
                     }
-                    nestedObject = createInstance(field.getType());
+                    nestedObject = createInstance(accessor.getType());
                     Object finalNestedObject = nestedObject;
-                    context.add(new NestedObjectStub(modelInstance, field, finalNestedObject));
+                    context.add(new NestedObjectStub(modelInstance, accessor, finalNestedObject));
                 }
 
-                return findMatchModelField(nestedObject,
+                return findMatchModelAccessor(nestedObject,
                     StringUtils.uncapitalize(fieldName.replaceFirst(
                         "^" + possibleNestedField, "")), context, createNestedObject);
             }
-            possibleNestedField.append(StringUtils.capitalize(nameParts[++partIndex]));
+            possibleNestedField.append(capitalize(nameParts[++partIndex]));
         }
 
         return null;
@@ -698,20 +696,89 @@ public final class ReflectionUtils {
 
     private record NestedObjectStub(
         Object owner,
-        Field field,
+        Accessor accessor,
         Object nestedObject
     ) {}
 
-    public static class FieldTuple {
+    public static class Accessor {
+        @Getter
+        private final Method getter;
+        @Getter
+        private final Method setter;
         @Getter
         private final Field field;
+
+        private Accessor(Method getter, Method setter, Field field) {
+            this.getter = getter;
+            this.setter = setter;
+            this.field = field;
+        }
+
+        public Class<?> getType() {
+            return field != null ? field.getType() : (getter != null ? getter.getReturnType() : null);
+        }
+
+        public Type getGenericType() {
+            return field != null ? field.getGenericType() : (getter != null ? getter.getGenericReturnType() : null);
+        }
+
+        public String getName() {
+            if (field != null) return field.getName();
+            if (getter != null) return StringUtils.uncapitalize(getter.getName().substring(3));
+            if (setter != null) return StringUtils.uncapitalize(setter.getName().substring(3));
+            return "unknown";
+        }
+
+        public <T> T getValue(Object instance) {
+            if (getter != null) return callMethod(instance, getter);
+            T value = getFieldValue(instance, field);
+            return value;
+        }
+
+        public <T> void setValue(Object instance, T value) {
+            if (setter != null) callMethod(instance, setter, value);
+            else setFieldValue(instance, field, value);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Accessor that = (Accessor) o;
+
+            return field == that.field && getter == that.getter && setter == that.setter;
+        }
+
+        public boolean isTransientField() {
+            if (field != null) {
+                return field.isAnnotationPresent(org.laxture.skr.jooq.mapper.annotation.Transient.class)
+                    || field.isAnnotationPresent(org.springframework.data.annotation.Transient.class)
+                    || field.isAnnotationPresent(java.beans.Transient.class)
+                    || (field.getModifiers() & Modifier.TRANSIENT) != 0;
+            }
+
+            if (getter != null) {
+                return getter.isAnnotationPresent(org.laxture.skr.jooq.mapper.annotation.Transient.class)
+                    || getter.isAnnotationPresent(org.springframework.data.annotation.Transient.class)
+                    || getter.isAnnotationPresent(java.beans.Transient.class)
+                    || (getter.getModifiers() & Modifier.TRANSIENT) != 0;
+            }
+
+            return false;
+        }
+    }
+
+    public static class AccessorTuple {
+        @Getter
+        private final Accessor accessor;
         @Getter
         private final Object owner;
         private final List<NestedObjectStub> context;
 
-        private FieldTuple(@NonNull Field field, @NonNull Object owner,
-                          @NonNull List<NestedObjectStub> context) {
-            this.field = field;
+        private AccessorTuple(@NonNull Accessor accessor, @NonNull Object owner,
+                              @NonNull List<NestedObjectStub> context) {
+            this.accessor = accessor;
             this.owner = owner;
             this.context = context;
         }
@@ -721,17 +788,22 @@ public final class ReflectionUtils {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            FieldTuple that = (FieldTuple) o;
+            AccessorTuple that = (AccessorTuple) o;
 
-            return field == that.field && owner == that.owner;
+            return accessor.equals(that.accessor) && owner == that.owner;
         }
 
-        /**
-         * Sets the tle.
-         */
+        public <T> T getValue() {
+            return accessor.getValue(owner);
+        }
+
+        public <T> void setValue(T value) {
+            accessor.setValue(owner, value);
+        }
+
         public void settle() {
             context.forEach(stub -> {
-                setFieldValue(stub.owner, stub.field, stub.nestedObject);
+                stub.accessor.setValue(stub.owner, stub.nestedObject);
             });
         }
     }
@@ -747,8 +819,11 @@ public final class ReflectionUtils {
                                       @NonNull Field field) {
         try {
             field.setAccessible(true);
-            return (T) field.get(target);
+            T result = (T) field.get(target);
+            System.out.println("Direct field access returned: " + result);
+            return result;
         } catch (Exception e) {
+            System.out.println("Direct field access failed: " + e.getMessage());
             return null;
         }
     }
@@ -817,9 +892,9 @@ public final class ReflectionUtils {
             return ((Map<?, ?>) target).get(fieldName);
         }
 
-        Object val = callMethod(target, "get"+ StringUtils.capitalize(fieldName));
+        Object val = callMethod(target, "get"+ capitalize(fieldName));
         if (val == null) {
-            val = callMethod(target, "is"+ StringUtils.capitalize(fieldName));
+            val = callMethod(target, "is"+ capitalize(fieldName));
         }
         if (val != null) return val;
 
@@ -852,6 +927,33 @@ public final class ReflectionUtils {
     public static void setFieldValue(@NonNull Object target,
                                      @NonNull Field field,
                                      Object value) {
+        // First try to find setter method
+        String fieldName = field.getName();
+        String capitalizedFieldName = capitalize(fieldName);
+        String setterName = "set" + capitalizedFieldName;
+
+        // Try to find setter method with matching parameter type
+        Method setterMethod = null;
+        for (Method method : target.getClass().getDeclaredMethods()) {
+            if (method.getName().equals(setterName)
+                && method.getParameterCount() == 1
+                && method.getParameterTypes()[0].isAssignableFrom(field.getType())) {
+                setterMethod = method;
+                break;
+            }
+        }
+
+        if (setterMethod != null) {
+            try {
+                setterMethod.setAccessible(true);
+                setterMethod.invoke(target, value);
+                return;
+            } catch (Exception e) {
+                // Fall back to field access if setter fails
+            }
+        }
+
+        // Fall back to direct field access
         try {
             field.setAccessible(true);
             field.set(target, value);
@@ -1111,6 +1213,23 @@ public final class ReflectionUtils {
                                       Object... parameters) {
         Class<O> clazz = (Class<O>) object.getClass();
         return callMethod(clazz, object, methodName, parameters);
+    }
+
+    /**
+     * Callmethod operation.
+     *
+     * @param object the object
+     * @param parameters the parameters
+     * @return the result
+     */
+    public static <R, O> R callMethod(O object,
+                                      @NonNull Method method,
+                                      Object... parameters) {
+        try {
+            return (R) method.invoke(object, parameters);
+        } catch (IllegalAccessException | InvocationTargetException ignore) {
+        }
+        return null;
     }
 
     /**

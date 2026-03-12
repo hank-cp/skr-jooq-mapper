@@ -38,13 +38,13 @@ class ConverterTest {
     @Test
     public void testJsonObjectConverter() {
         var converter = new JsonObjectConverter(new ObjectMapper());
-        assertThat(converter.match(ReflectionUtils.findField(ConverterTest.class, "user").getGenericType(), org.jooq.JSON.class), is(11));
+        assertThat(converter.match(ReflectionUtils.findField(ConverterTest.class, "user").getType(), org.jooq.JSON.class), is(11));
         User user = (User) converter.convertToModelType(JSON.json("{\"id\":1}"), User.class);
         assertThat(user, notNullValue());
         assertThat(user.getId(), is(1L));
 
         var converter_ = new JsonbObjectConverter(new ObjectMapper());
-        assertThat(converter_.match(ReflectionUtils.findField(ConverterTest.class, "user").getGenericType(), org.jooq.JSONB.class), is(11));
+        assertThat(converter_.match(ReflectionUtils.findField(ConverterTest.class, "user").getType(), org.jooq.JSONB.class), is(11));
     }
 
     @Test

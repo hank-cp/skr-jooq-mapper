@@ -48,6 +48,8 @@ class ReflectionUtilsTest {
 
     public static class C {
         String d;
+        String e;
+        String f;
 
         public String getEval() {
             return d;
@@ -55,6 +57,14 @@ class ReflectionUtilsTest {
 
         public boolean isFval() {
             return true;
+        }
+
+        public String getE() {
+            return "e";
+        }
+
+        public void setF(String value) {
+            f = value.toUpperCase();
         }
     }
 
@@ -97,22 +107,22 @@ class ReflectionUtilsTest {
     }
 
     @Test
-    void testFindMatchModelField() {
+    void testFindMatchModelAccessor() {
         // find first level field
         User user = new User();
-        ReflectionUtils.FieldTuple modelField =
-            ReflectionUtils.findMatchModelField(user, "name");
+        ReflectionUtils.AccessorTuple modelField =
+            ReflectionUtils.findMatchModelAccessor(user, "name");
         assertThat(modelField, notNullValue());
-        assertThat(modelField.getField(), notNullValue());
-        assertThat(modelField.getField().getName(), equalTo("name"));
+        assertThat(modelField.getAccessor(), notNullValue());
+        assertThat(modelField.getAccessor().getName(), equalTo("name"));
         assertThat(modelField.getOwner(), is(user));
 
         // find nested field
         user = new User();
-        modelField = ReflectionUtils.findMatchModelField(user, "addressCity");
+        modelField = ReflectionUtils.findMatchModelAccessor(user, "addressCity");
         assertThat(modelField, notNullValue());
-        assertThat(modelField.getField(), notNullValue());
-        assertThat(modelField.getField().getName(), equalTo("city"));
+        assertThat(modelField.getAccessor(), notNullValue());
+        assertThat(modelField.getAccessor().getName(), equalTo("city"));
         assertThat(modelField.getOwner(), notNullValue());
         assertThat(modelField.getOwner(), instanceOf(Address.class));
         assertThat(user.getAddress(), nullValue());
@@ -123,10 +133,10 @@ class ReflectionUtilsTest {
 
         // find nested field with two words
         user = new User();
-        modelField = ReflectionUtils.findMatchModelField(user, "userProfileAvatarUrl");
+        modelField = ReflectionUtils.findMatchModelAccessor(user, "userProfileAvatarUrl");
         assertThat(modelField, notNullValue());
-        assertThat(modelField.getField(), notNullValue());
-        assertThat(modelField.getField().getName(), equalTo("avatarUrl"));
+        assertThat(modelField.getAccessor(), notNullValue());
+        assertThat(modelField.getAccessor().getName(), equalTo("avatarUrl"));
         assertThat(modelField.getOwner(), notNullValue());
         assertThat(modelField.getOwner(), instanceOf(UserProfile.class));
         assertThat(user.getUserProfile(), nullValue());
@@ -136,10 +146,10 @@ class ReflectionUtilsTest {
 
         // find nested field with multiple levels
         user = new User();
-        modelField = ReflectionUtils.findMatchModelField(user, "addressUserProfileAvatarUrl");
+        modelField = ReflectionUtils.findMatchModelAccessor(user, "addressUserProfileAvatarUrl");
         assertThat(modelField, notNullValue());
-        assertThat(modelField.getField(), notNullValue());
-        assertThat(modelField.getField().getName(), equalTo("avatarUrl"));
+        assertThat(modelField.getAccessor(), notNullValue());
+        assertThat(modelField.getAccessor().getName(), equalTo("avatarUrl"));
         assertThat(modelField.getOwner(), notNullValue());
         assertThat(modelField.getOwner(), instanceOf(UserProfile.class));
         assertThat(user.getAddress(), nullValue());
@@ -150,30 +160,26 @@ class ReflectionUtilsTest {
 
         // find non-exist field
         user = new User();
-        modelField = ReflectionUtils.findMatchModelField(user, "nonExistField");
+        modelField = ReflectionUtils.findMatchModelAccessor(user, "nonExistField");
         assertThat(modelField, nullValue());
 
         // find non-exist nested field
         user = new User();
-        modelField = ReflectionUtils.findMatchModelField(user, "addressNonExistField");
+        modelField = ReflectionUtils.findMatchModelAccessor(user, "addressNonExistField");
         assertThat(modelField, nullValue());
         assertThat(user.getAddress(), nullValue());
 
-        // Collection type field should not be treated as nested object
-        // When field name starts with a Collection field name (e.g., "eduExperiences"),
-        // it should skip the Collection field and continue searching or return null
+        // getter should be called
         user = new User();
-        modelField = ReflectionUtils.findMatchModelField(user, "eduExperiencesSomeField");
-        // Collection fields should not be instantiated as nested objects
-        // The field "eduExperiences" is a List, so it should not be treated as a nested object
-        // and the method should continue searching or return null
-        assertThat(user.getEduExperiences(), nullValue());
+        modelField = ReflectionUtils.findMatchModelAccessor(user, "id");
+        assertThat(modelField, notNullValue());
+        user.id = 0;
+        assertThat(modelField.getAccessor().getValue(user), nullValue()); // getter return null if id is 0
 
-        // Map type field should not be treated as nested object
-        user = new User();
-        modelField = ReflectionUtils.findMatchModelField(user, "metaInfoSomeField");
-        // Map fields should not be instantiated as nested objects
-        // The field "metaInfo" is a Map, so it should not be treated as a nested object
-        assertThat(user.getMetaInfo(), nullValue());
+        // setter should be called
+        modelField = ReflectionUtils.findMatchModelAccessor(user, "age");
+        assertThat(modelField, notNullValue());
+        modelField.setValue(0); // setter assign null to age field if value is 0
+        assertThat(user.age, nullValue());
     }
 }

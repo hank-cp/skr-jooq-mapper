@@ -13,10 +13,10 @@ import java.util.Map;
 @Data
 public class User implements MappingHook {
 
-    private long id;
+    public long id;
 
     private String name;
-    private Integer age;
+    public Integer age;
 
     // test java.time
     private LocalDateTime createdAt;
@@ -60,7 +60,10 @@ public class User implements MappingHook {
     }
 
     public void setAge(int age) {
-        if (age == 0) this.age = null;
-        this.age = age;
+        if (age == 0) {
+            this.age = null;
+        } else {
+            this.age = age;
+        }
     }
 }

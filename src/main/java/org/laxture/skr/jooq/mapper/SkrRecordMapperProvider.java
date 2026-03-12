@@ -27,7 +27,10 @@ import org.laxture.skr.jooq.mapper.hook.MappingHook;
 import org.laxture.skr.jooq.mapper.misc.NamingUtils;
 import org.laxture.skr.jooq.mapper.misc.ReflectionUtils;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Provider for SkrRecordMapper instances.
@@ -98,14 +101,13 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
                     tableFieldCaseType, recordField.getName());
 
                 // find model field, convert and set value
-                ReflectionUtils.FieldTuple modelField = ReflectionUtils.findMatchModelField(modelInstance, fieldName);
+                ReflectionUtils.AccessorTuple modelField = ReflectionUtils.findMatchModelAccessor(modelInstance, fieldName);
                 if (modelField != null) {
                     processedFields.add(recordField.getName()); // find matched model field, mark as processed, don't collect as leftover
 
-                    Object converted = convertFieldValue(jVal, modelField.getField().getGenericType());
+                    Object converted = convertFieldValue(jVal, modelField.getAccessor().getGenericType());
                     if (converted == null) continue;
-                    ReflectionUtils.setFieldValue(
-                        modelField.getOwner(), modelField.getField(), converted);
+                    modelField.setValue(converted);
                     modelField.settle();
                 }
             }
@@ -140,7 +142,7 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
             modelType, LeftoverCollector.class);
         if (leftoverField == null || !Map.class.isAssignableFrom(leftoverField.getType())) return;
 
-        Map<String, Object> leftoverMap = ReflectionUtils.getFieldValue(instance, leftoverField);
+        Map<String, Object> leftoverMap = ReflectionUtils.getFieldValue(instance, leftoverField.getName());
         if (leftoverMap == null) leftoverMap = (Map<String, Object>) ReflectionUtils.createInstance(leftoverField.getType());
         for (Field<?> field : record.fields()) {
             String fieldName = field.getName();
@@ -170,7 +172,7 @@ public class SkrRecordMapperProvider implements RecordMapperProvider {
 
         if (leftoverMap.isEmpty()) return;
         // set leftover field to the model instance
-        if (leftoverMap != ReflectionUtils.getFieldValue(instance, leftoverField)) {
+        if (leftoverMap != ReflectionUtils.getFieldValue(instance, leftoverField.getName())) {
             ReflectionUtils.setFieldValue(instance, leftoverField, leftoverMap);
         }
     }

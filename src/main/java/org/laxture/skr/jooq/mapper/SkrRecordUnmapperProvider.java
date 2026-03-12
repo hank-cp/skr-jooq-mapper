@@ -26,7 +26,6 @@ import org.laxture.skr.jooq.mapper.converter.SkrJooqConverter;
 import org.laxture.skr.jooq.mapper.misc.NamingUtils;
 import org.laxture.skr.jooq.mapper.misc.ReflectionUtils;
 
-import java.lang.reflect.Modifier;
 import java.util.Map;
 
 @Slf4j
@@ -75,11 +74,11 @@ public class SkrRecordUnmapperProvider implements RecordUnmapperProvider {
 
                 Object mVal;
                 // Use false for createNestedObject - don't create nested objects if null
-                ReflectionUtils.FieldTuple modelField = ReflectionUtils.findMatchModelField(model, fieldName, false);
+                ReflectionUtils.AccessorTuple modelField = ReflectionUtils.findMatchModelAccessor(model, fieldName, false);
                 if (modelField != null) {
                     // find model field
-                    if (isTransientField(modelField.getField())) continue;
-                    mVal = ReflectionUtils.getFieldValue(modelField.getOwner(), modelField.getField());
+                    if (modelField.getAccessor().isTransientField()) continue;
+                    mVal = modelField.getValue();
                 } else {
                     // try to find value from leftover collector
                     mVal = findValueFromLeftoverCollector(model, fieldName);
@@ -102,13 +101,6 @@ public class SkrRecordUnmapperProvider implements RecordUnmapperProvider {
             Map<String, Object> leftoverMap = ReflectionUtils.getFieldValue(modelInstance, leftoverField);
             if (leftoverMap == null || leftoverMap.isEmpty()) return null;
             return leftoverMap.get(fieldName);
-        }
-
-        private boolean isTransientField(java.lang.reflect.Field field) {
-            return field.isAnnotationPresent(org.laxture.skr.jooq.mapper.annotation.Transient.class)
-                || field.isAnnotationPresent(org.springframework.data.annotation.Transient.class)
-                || field.isAnnotationPresent(java.beans.Transient.class)
-                || (field.getModifiers() & Modifier.TRANSIENT) != 0;
         }
     }
 

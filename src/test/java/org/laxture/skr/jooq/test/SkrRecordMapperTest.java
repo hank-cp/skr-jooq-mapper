@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
-import org.jooq.UpdatableRecord;
 import org.jooq.impl.DSL;
-import org.jooq.impl.UpdatableRecordImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.laxture.skr.jooq.mapper.SkrRecordMapperProvider;
@@ -81,6 +79,12 @@ class SkrRecordMapperTest {
                                edu_experiences, recent_edu_experience,
                                meta_info, friend_ids, note, misc_info)
             VALUES ('Skr', 30, '2023-01-01 12:00:00', '2000-01-01', 
+                    '123 Main St', 'Apt 4B', 'New York', 
+                    'https://avatar.com/hank.jpg', 
+                    JSON '[{"institute":"MIT","major":"CS"},{"institute":"MIT","major":"Math"}]', 
+                    JSON '{"institute":"MIT","major":"CS"}', 
+                    JSON '{"habit":"reading", "married":true}', ARRAY[1,2,3], 'note', JSON '{"a":"b"}'),
+                   ('Skr_0_age', 0, '2023-01-01 12:00:00', '2000-01-01', 
                     '123 Main St', 'Apt 4B', 'New York', 
                     'https://avatar.com/hank.jpg', 
                     JSON '[{"institute":"MIT","major":"CS"},{"institute":"MIT","major":"Math"}]', 
@@ -164,10 +168,11 @@ class SkrRecordMapperTest {
     }
 
     @Test
-    void testToSetterOverField() {
+    void testSetterOverField() {
+        org.jooq.Record record = dsl.resultQuery("SELECT * FROM users WHERE name = 'Skr_0_age'").fetchOne();
         User user = record.into(User.class);
-        user.setAge(31);
-        user.setImmutable("changed");
-        record.from(user);
+        assertThat(user, notNullValue());
+        assertThat(user.getName(), is("Skr_0_age"));
+        assertThat(user.age, nullValue());
     }
 }
